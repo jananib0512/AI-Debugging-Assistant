@@ -2,8 +2,6 @@
 
 An enterprise-grade debugging platform with project management, authentication, and a modern SaaS dashboard.
 
-> **Status:** Phase 1C — Authentication, Dashboard, and Project CRUD complete.
-
 ---
 
 ## Tech Stack
