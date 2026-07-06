@@ -14,8 +14,9 @@ from app.core.storage import (
 from app.repositories.project_repository import ProjectRepository
 from app.schemas.project import ProjectResponse
 
-MAX_UPLOAD_SIZE = 500 * 1024 * 1024  # 500 MB
-ALLOWED_EXTENSIONS = {".zip"}
+MAX_UPLOAD_SIZE = 1024 * 1024 * 1024  # 1 GB
+ALLOWED_EXTENSIONS = {".zip", ".tar", ".gz", ".tgz", ".7z", ".rar"}
+CHUNK_SIZE = 8 * 1024 * 1024  # 8 MB per chunk for streaming
 
 
 class UploadService:
@@ -36,26 +37,35 @@ class UploadService:
                 detail="A file has already been uploaded for this project",
             )
 
-        ext = os.path.splitext(file.filename or "")[1].lower()
-        if ext not in ALLOWED_EXTENSIONS:
+        filename = file.filename or ""
+        ext = os.path.splitext(filename)[1].lower()
+        archive_ext = self._detect_archive_ext(filename)
+
+        if archive_ext is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Only .zip files are supported",
+                detail="Unsupported archive format. Supported formats: .zip, .tar.gz, .tgz, .7z, .rar",
+            )
+
+        if ext == ".gz" and archive_ext not in (".tar.gz", ".tgz"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported archive format. Supported formats: .zip, .tar.gz, .tgz, .7z, .rar",
             )
 
         if file.size is not None and file.size > MAX_UPLOAD_SIZE:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File exceeds the maximum upload size of 500 MB",
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Maximum upload size is 1 GB.",
             )
 
-        if file.filename is None or file.filename.strip() == "":
+        if filename.strip() == "":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Filename is required",
             )
 
-        safe_name = os.path.basename(file.filename)
+        safe_name = os.path.basename(filename)
 
         ensure_directories()
         file_id = generate_file_id()
@@ -65,23 +75,28 @@ class UploadService:
             project.upload_status = "uploading"
             self.repo.db.commit()
 
-            content = file.file.read()
-            file_size = len(content)
+            file_size = 0
+            with open(upload_path, "wb") as f:
+                while True:
+                    chunk = file.file.read(CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    file_size += len(chunk)
+                    if file_size > MAX_UPLOAD_SIZE:
+                        f.close()
+                        upload_path.unlink(missing_ok=True)
+                        raise HTTPException(
+                            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                            detail="Maximum upload size is 1 GB.",
+                        )
+                    f.write(chunk)
 
             if file_size == 0:
+                upload_path.unlink(missing_ok=True)
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Uploaded file is empty",
                 )
-
-            if file_size > MAX_UPLOAD_SIZE:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="File exceeds the maximum upload size of 500 MB",
-                )
-
-            with open(upload_path, "wb") as f:
-                f.write(content)
 
             workspace_path = create_workspace(project.id)
 
@@ -107,3 +122,13 @@ class UploadService:
             )
 
         return ProjectResponse.model_validate(project)
+
+    @staticmethod
+    def _detect_archive_ext(filename: str) -> str | None:
+        name_lower = filename.lower()
+        if name_lower.endswith(".tar.gz") or name_lower.endswith(".tgz"):
+            return ".tar.gz"
+        for ext in ALLOWED_EXTENSIONS:
+            if name_lower.endswith(ext):
+                return ext
+        return None

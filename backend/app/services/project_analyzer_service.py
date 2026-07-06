@@ -8,8 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.storage import get_workspace_path
-from app.detection.detector import detect_frameworks as old_detect_frameworks
+from app.detection.project_scanner import ProjectScanner, ProjectScanResult
+
+from app.repositories.architecture_detector import ArchitectureDetectorRepository
+from app.repositories.configuration_detector import ConfigurationDetectorRepository
+from app.repositories.entry_point_detector import EntryPointDetector
+from app.repositories.framework_detector import FrameworkDetectorRepository
 from app.repositories.metadata_repository import MetadataRepository
+from app.repositories.module_detector import ModuleDetectorRepository
 from app.repositories.project_analyzer_repository import ProjectAnalyzerRepository
 from app.repositories.project_repository import ProjectRepository
 from app.schemas.project_analyzer import (
@@ -50,13 +56,22 @@ class ProjectAnalyzerService:
                 detail="Workspace directory not found on disk. Please re-extract the project.",
             )
 
-        repo = ProjectAnalyzerRepository(workspace_path)
+        scanner = ProjectScanner()
+        scan_result = scanner.scan(workspace_path)
+
+        repo = ProjectAnalyzerRepository(workspace_path, scan_result)
         raw = repo.analyze()
 
-        project_type, project_type_reason = self._detect_project_type(raw, workspace_path, project.project_name)
-        architecture, architecture_reason = self._detect_architecture(raw, project_type)
-        detected_modules = self._detect_modules(raw, project_type)
-        databases = self._detect_databases(raw, project_type)
+        project_type, project_type_reason = self._detect_project_type(
+            scan_result, project.project_name,
+        )
+        architecture, architecture_reason = self._detect_architecture(
+            scan_result, project_type,
+        )
+        detected_modules = self._detect_modules(scan_result, project_type)
+        databases = self._detect_databases(scan_result)
+
+        frontend_framework, backend_framework = self._detect_frameworks(scan_result)
 
         entry_points = [
             DetectedEntryPoint(**ep) for ep in raw["entry_points"]
@@ -69,10 +84,7 @@ class ProjectAnalyzerService:
             raw, project_type, architecture,
         )
 
-        frontend_framework, backend_framework = self._detect_frameworks(raw)
-
-        has_docker = self._has_docker(workspace_path)
-
+        has_docker = scan_result.dockerfile_content is not None
         has_ci_cd = self._has_ci_cd(workspace_path)
 
         return ProjectAnalysisResponse(
@@ -86,7 +98,7 @@ class ProjectAnalyzerService:
             frontend_framework=frontend_framework,
             backend_framework=backend_framework,
             database_detected=databases,
-            has_tests=raw["has_tests"],
+            has_tests=scan_result.has_tests,
             has_docker=has_docker,
             has_ci_cd=has_ci_cd,
             structure_summary=structure_summary,
@@ -94,22 +106,27 @@ class ProjectAnalyzerService:
         )
 
     def _detect_project_type(
-        self,
-        raw: dict,
-        workspace_path: Path,
-        project_name: str,
+        self, scan: ProjectScanResult, project_name: str,
     ) -> tuple[str, str]:
-        top_dirs = {d.lower() for d in raw["top_level_dirs"]}
-        top_files = {f.lower() for f in raw["top_level_files"]}
-        all_dirs_lower = {d.lower() for d in raw["all_dirs"]}
+        top_dirs = {d.lower() for d in scan.root_dirs}
+        top_files = {f.lower() for f in scan.root_files}
+
+        has_python = scan.language_counts.get("Python", 0) > 0
+        has_js = (scan.language_counts.get("JavaScript", 0) > 0 or scan.language_counts.get("TypeScript", 0) > 0)
+        has_react = "react" in scan.js_imports
+        has_vue = "vue" in scan.js_imports
+        has_django = "django" in scan.python_imports
+        has_fastapi = "fastapi" in scan.python_imports
+        has_flask = "flask" in scan.python_imports
+
+        is_next = has_js and ("next.config.js" in top_files or "next.config.mjs" in top_files or "next.config.ts" in top_files or "next" in {f.lower() for f in (scan.package_json or {}).get("dependencies", {})})
+        is_nuxt = "nuxt" in scan.js_imports
 
         has_backend_dir = bool(top_dirs & {"backend", "server", "api"})
         has_frontend_dir = bool(top_dirs & {"frontend", "client", "ui"})
-        has_src_or_app = raw["has_src_or_app"]
+        has_src_or_app = scan.has_src_or_app
         has_packages_dir = "packages" in top_dirs
-        has_multiple_services = (
-            len([d for d in top_dirs if "service" in d]) >= 2
-        )
+        has_multiple_services = len([d for d in top_dirs if "service" in d]) >= 2
 
         has_main_py = "main.py" in top_files
         has_app_py = "app.py" in top_files
@@ -117,48 +134,82 @@ class ProjectAnalyzerService:
         has_go_mod = "go.mod" in top_files
         has_cargo_toml = "cargo.toml" in top_files
         has_package_json = "package.json" in top_files
-        has_dockerfile = "dockerfile" in top_files or "Dockerfile" in top_files
-        has_docker_compose = any(
-            f in top_files for f in ("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
-        )
         has_angular_json = "angular.json" in top_files
-        has_vite_config = any(
-            f.startswith("vite.config.") for f in raw["top_level_files"]
+        has_vite_config = any(f.startswith("vite.config.") for f in top_files)
+        has_dockerfile = scan.dockerfile_content is not None
+        has_docker_compose = scan.docker_compose_content is not None
+        has_k8s = bool(scan.all_dir_names & {"k8s", "kubernetes", "manifests", "helm", "chart"})
+        has_notebooks = any(f.endswith(".ipynb") for f in scan.all_files)
+
+        ml_deps = {"tensorflow", "torch", "sklearn", "transformers", "keras"}
+        has_ml = bool(scan.python_imports & ml_deps) or bool(
+            d for d in scan.requirements_txt_deps
+            if any(m in d for m in ml_deps)
         )
-        has_electron_builder = any(
-            "electron" in f for f in top_files
+        ml_deps_in_req = any(
+            any(m in d for m in ml_deps) for d in scan.requirements_txt_deps
         )
-        has_serverless = any(
-            f in top_files for f in ("serverless.yml", "serverless.yaml", "serverless.json")
-        )
-        has_k8s_manifests = bool(all_dirs_lower & {"k8s", "kubernetes", "manifests", "helm", "chart"})
+        if ml_deps_in_req:
+            has_ml = True
+
+        ds_dirs = top_dirs & {"notebooks", "data", "datasets", "analysis"}
+        has_ds = has_notebooks or bool(ds_dirs)
 
         if has_packages_dir and not has_frontend_dir and not has_backend_dir:
             return "Monorepo", "Contains packages directory with no dominant frontend or backend structure"
 
+        if has_docker_compose and (has_multiple_services or has_k8s):
+            return "Microservice", "Docker Compose with multiple service directories or Kubernetes manifests"
+
+        if has_k8s and not has_docker_compose:
+            return "Microservice", "Kubernetes manifests detected"
+
         if has_frontend_dir and has_backend_dir:
             return "Full Stack", "Detected both frontend and backend directories"
 
-        if has_docker_compose and (has_multiple_services or has_k8s_manifests):
-            return "Microservice", "Docker Compose with multiple service directories or Kubernetes manifests"
+        if is_next:
+            return "Next.js Application", "Next.js framework detected with app/pages router"
 
-        if has_main_py or has_app_py or has_manage_py:
+        if has_angular_json:
+            return "Angular Application", "Angular CLI configuration detected"
+
+        if has_vite_config and has_react:
+            return "React Application", "Vite + React project"
+        if has_vite_config and has_vue:
+            return "Vue Application", "Vite + Vue project"
+
+        if has_django or has_manage_py:
+            return "Django Application", "Django framework detected"
+
+        if has_fastapi or (has_main_py and "api" in top_dirs):
+            return "FastAPI Application", "FastAPI framework detected"
+
+        if has_flask or has_app_py:
+            return "Flask Application", "Flask framework detected"
+
+        if has_ml or has_ds:
+            if has_notebooks:
+                return "Data Science Project", "Jupyter notebooks and ML dependencies detected"
+            return "Machine Learning Project", "ML framework dependencies detected"
+
+        if has_main_py or has_app_py:
             is_api = bool(top_dirs & {"api", "routes"}) or has_main_py
-            if is_api and has_frontend_dir:
-                return "Full Stack", "Python application with API structure and frontend directory"
             if is_api:
                 return "API", "Python application with API entry point detected"
             return "Backend", "Python application entry point detected"
 
         if has_go_mod:
+            if "cmd" in top_dirs:
+                return "CLI", "Go CLI project with cmd directory"
             return "Backend", "Go module detected"
 
         if has_cargo_toml:
             return "CLI", "Rust/Cargo project detected"
 
-        if has_package_json:
+        if has_package_json and has_js:
             has_api_routes = bool(top_dirs & {"api", "routes", "controllers"})
-            has_backend_dir or bool(all_dirs_lower & {"api", "routes", "controllers", "middleware"})
+            if is_next or is_nuxt:
+                return "Full Stack" if (has_backend_dir or has_api_routes) else "Frontend", "JS framework app"
             if has_frontend_dir or (not has_api_routes and has_src_or_app):
                 if has_backend_dir or has_api_routes:
                     return "Full Stack", "Node.js project with both frontend and backend directories"
@@ -167,132 +218,82 @@ class ProjectAnalyzerService:
                 return "API", "Node.js project with API routes"
             return "Backend", "Node.js project without frontend directory"
 
-        if has_angular_json or has_vite_config:
-            return "Frontend", "Frontend framework config detected"
-
         if has_dockerfile and not has_frontend_dir and not has_backend_dir:
             return "Microservice", "Dockerfile without explicit frontend or backend structure"
 
-        if has_go_mod or has_cargo_toml:
-            category = "CLI" if has_cargo_toml else "Backend"
-            return category, f"{'Rust' if has_cargo_toml else 'Go'} project detected"
-
-        for d in top_dirs:
-            if d in {"cmd", "internal", "pkg"}:
-                return "CLI", "Go-style directory structure detected"
-
-        if has_k8s_manifests:
+        if has_k8s:
             return "Microservice", "Kubernetes manifests detected"
 
-        if raw["has_src_or_app"]:
+        if scan.has_src_or_app:
             return "Library", "Source code directory found with no clear application type"
 
-        if len(raw["top_level_dirs"]) <= 2 and len(raw["top_level_files"]) <= 5:
+        if len(scan.root_dirs) <= 2 and len(scan.root_files) <= 5:
             return "Library", "Minimal project structure with few files and directories"
 
-        if raw["needs_analysis"]:
+        if scan.needs_analysis:
             return "Unknown", "Workspace is empty or inaccessible"
 
         return "Unknown", "Could not determine project type from directory structure"
 
     def _detect_architecture(
-        self, raw: dict, project_type: str,
+        self, scan: ProjectScanResult, project_type: str,
     ) -> tuple[str, str]:
-        from app.repositories.project_analyzer_repository import ARCHITECTURE_DIR_PATTERNS
+        detector = ArchitectureDetectorRepository(scan)
+        arch_results = detector.detect_architectures()
 
-        all_dirs = {d.lower() for d in raw["all_dirs"]}
-        all_files = {f.lower() for f in raw["all_files"]}
-
-        if project_type == "Monorepo":
-            return "Monorepo", "Packages or apps directory indicates a monorepo structure"
-
-        for arch, patterns in ARCHITECTURE_DIR_PATTERNS.items():
-            matching = patterns & all_dirs
-            if len(matching) >= 2:
-                display_names = {
-                    "mvc": "MVC",
-                    "layered": "Layered",
-                    "clean_architecture": "Clean Architecture",
-                    "hexagonal": "Hexagonal",
-                    "feature_based": "Feature-Based",
-                }
-                return display_names.get(arch, arch), f"Detected directories: {', '.join(sorted(matching))}"
-
-        if all_dirs & {"services", "repositories", "api"}:
-            return "Layered", "Services, repositories, and API directories indicate layered architecture"
-
-        if all_dirs & {"controllers", "models"}:
-            return "MVC", "Controllers and models directories indicate MVC architecture"
-
-        if all_dirs & {"features", "modules"}:
-            return "Feature-Based", "Features or modules directory indicates feature-based architecture"
-
-        if project_type == "Microservice":
-            return "Microservice", "Project type suggests microservice architecture"
-
-        if raw["has_src_or_app"]:
-            return "Layered", "Source directory with no specific architecture pattern detected; defaulting to layered"
+        if arch_results and arch_results[0]["confidence"] >= 30:
+            top = arch_results[0]
+            return top["architecture"], top["reason"]
 
         return "Unknown", "Could not determine architecture from directory structure"
 
-    def _detect_modules(self, raw: dict, project_type: str) -> list[str]:
-        modules: list[str] = []
-        top_dirs = {d.lower() for d in raw["top_level_dirs"]}
-        all_dirs_lower = {d.lower() for d in raw["all_dirs"]}
+    def _detect_modules(self, scan: ProjectScanResult, project_type: str) -> list[str]:
+        all_dir_names = scan.all_dir_names
+        root_dirs_lower = {d.lower() for d in scan.root_dirs}
+        all_dir_names |= root_dirs_lower
 
-        type_map = {
-            "api": "API Layer",
-            "routes": "API Layer",
-            "controllers": "API Layer",
-            "models": "Data Models",
-            "schemas": "Data Schemas",
-            "services": "Business Logic",
-            "repositories": "Data Access",
-            "components": "UI Components",
-            "pages": "Page Components",
-            "hooks": "React Hooks",
-            "utils": "Utilities",
-            "helpers": "Helpers",
-            "store": "State Management",
-            "state": "State Management",
+        type_map: dict[str, str] = {
+            "api": "API Layer", "routes": "API Layer", "controllers": "API Layer",
+            "endpoints": "API Layer",
+            "models": "Data Models", "schemas": "Data Schemas", "entities": "Data Models",
+            "services": "Business Logic", "repositories": "Data Access",
+            "components": "UI Components", "pages": "Page Components",
+            "hooks": "React Hooks", "store": "State Management", "state": "State Management",
             "middleware": "Middleware",
-            "config": "Configuration",
-            "tests": "Testing",
-            "__tests__": "Testing",
-            "spec": "Testing",
-            "test": "Testing",
-            "migrations": "Database Migrations",
-            "seeds": "Database Seeds",
-            "docs": "Documentation",
-            "documentation": "Documentation",
-            "public": "Static Assets",
-            "static": "Static Assets",
-            "assets": "Assets",
-            "scripts": "Scripts",
-            "bin": "Scripts",
-            "types": "Type Definitions",
-            "interfaces": "Type Definitions",
-            "layouts": "Layouts",
-            "features": "Features",
-            "modules": "Modules",
-            "context": "React Context",
-            "providers": "Providers",
+            "config": "Configuration", "configuration": "Configuration", "settings": "Configuration",
+            "tests": "Testing", "__tests__": "Testing", "spec": "Testing", "test": "Testing",
+            "migrations": "Database Migrations", "seeds": "Database Seeds",
+            "docs": "Documentation", "documentation": "Documentation",
+            "public": "Static Assets", "static": "Static Assets", "assets": "Assets",
+            "scripts": "Scripts", "bin": "Scripts",
+            "types": "Type Definitions", "interfaces": "Type Definitions",
+            "layouts": "Layouts", "features": "Features", "modules": "Modules",
+            "context": "React Context", "providers": "Providers",
+            "utils": "Utilities", "helpers": "Helpers",
+            "auth": "Authentication", "authentication": "Authentication",
+            "database": "Database", "db": "Database",
+            "logging": "Logging", "cache": "Caching",
+            "validation": "Validation", "templates": "Templates",
+            "ml": "ML/AI", "ai": "ML/AI",
+            "reports": "Reports", "report": "Reports",
+            "locales": "Localization", "i18n": "Localization",
         }
 
         seen: set[str] = set()
-        candidates = top_dirs | all_dirs_lower
-        for name in sorted(candidates):
+        modules: list[str] = []
+
+        for name in sorted(all_dir_names):
             module_type = type_map.get(name)
             if module_type and module_type not in seen:
                 seen.add(module_type)
                 modules.append(module_type)
 
         if "Authentication" not in modules and (
-            "auth" in all_dirs_lower or "login" in all_dirs_lower
+            "auth" in all_dir_names or "login" in all_dir_names
         ):
             modules.append("Authentication")
 
-        if project_type == "Full Stack":
+        if project_type in ("Full Stack",):
             if "API Layer" not in modules:
                 modules.insert(0, "API Layer")
             if "Data Models" not in modules:
@@ -302,77 +303,130 @@ class ProjectAnalyzerService:
             if "UI Components" not in modules:
                 modules.insert(0, "UI Components")
 
+        if project_type in ("Machine Learning Project", "Data Science Project"):
+            if "ML/AI" not in modules:
+                modules.insert(0, "ML/AI")
+
         return modules
 
-    def _detect_databases(self, raw: dict, project_type: str) -> list[str]:
+    def _detect_databases(self, scan: ProjectScanResult) -> list[str]:
         databases: list[str] = []
-        all_dirs_lower = {d.lower() for d in raw["all_dirs"]}
-        all_files_lower = {f.lower() for f in raw["all_files"]}
+        all_dir_names = scan.all_dir_names
+        root_files = {f.lower() for f in scan.root_files}
+        has_python = scan.language_counts.get("Python", 0) > 0
 
-        if all_dirs_lower & {"migrations", "seeds", "db", "database"}:
+        pip_deps = scan.requirements_txt_deps
+        npm_deps_names: set[str] = set()
+        if scan.package_json:
+            for section in ("dependencies", "devDependencies", "peerDependencies"):
+                section_data = scan.package_json.get(section, {})
+                if isinstance(section_data, dict):
+                    npm_deps_names.update(section_data.keys())
+
+        if all_dir_names & {"migrations", "seeds", "db", "database"}:
             databases.append("Database layer detected (migrations/seeds)")
 
-        if any("sql" in f for f in all_files_lower):
-            databases.append("SQL files found")
-
-        if "prisma" in all_dirs_lower or "prisma" in str(raw.get("all_dirs", [])):
+        if "prisma" in all_dir_names or "prisma" in npm_deps_names:
             databases.append("Prisma ORM")
+
+        if "sqlalchemy" in scan.python_imports or "sqlalchemy" in pip_deps:
+            databases.append("SQLAlchemy ORM")
+
+        if "flask_sqlalchemy" in scan.python_imports:
+            databases.append("Flask-SQLAlchemy")
+
+        db_pkg_map = {
+            "PostgreSQL": ["psycopg2", "psycopg2-binary", "psycopg", "asyncpg", "pg", "pg-promise"],
+            "MySQL": ["mysqlclient", "pymysql", "mysql-connector-python", "mysql2"],
+            "SQLite": ["sqlite3"],
+            "MongoDB": ["pymongo", "mongoose", "motor", "mongoengine"],
+            "Redis": ["redis", "ioredis"],
+        }
+
+        for db_name, db_pkgs in db_pkg_map.items():
+            if any(d in pip_deps for d in db_pkgs) or any(d in npm_deps_names for d in db_pkgs):
+                databases.append(db_name)
+
+        config_text = ""
+        for txt in [scan.config_py_content, scan.settings_py_content,
+                     scan.database_py_content, scan.env_content,
+                     scan.env_example_content]:
+            if txt:
+                config_text += txt.lower() + "\n"
+
+        if config_text:
+            for uri in scan.db_uris:
+                for db in ["postgresql", "postgres", "mysql", "sqlite", "mongodb", "redis"]:
+                    if db in uri.lower():
+                        db_name = {"postgresql": "PostgreSQL", "postgres": "PostgreSQL",
+                                   "mysql": "MySQL", "sqlite": "SQLite",
+                                   "mongodb": "MongoDB", "redis": "Redis"}.get(db, db)
+                        if db_name not in databases:
+                            databases.append(db_name)
 
         return databases
 
-    def _detect_frameworks(self, raw: dict) -> tuple[str | None, str | None]:
+    def _detect_frameworks(self, scan: ProjectScanResult) -> tuple[str | None, str | None]:
         frontend_framework: str | None = None
         backend_framework: str | None = None
-        top_files = {f.lower() for f in raw["top_level_files"]}
-        all_files_lower = {f.lower() for f in raw["all_files"]}
-        all_dirs_lower = {d.lower() for d in raw["all_dirs"]}
+        root_files = {f.lower() for f in scan.root_files}
 
-        if any("next.config" in f for f in top_files):
+        # Frontend
+        if any(f.startswith("next.config.") for f in root_files) or "next" in scan.js_imports:
             frontend_framework = "Next.js"
-        elif "angular.json" in top_files:
+        elif "angular.json" in root_files:
             frontend_framework = "Angular"
-        elif any("vite.config" in f for f in raw["top_level_files"]):
-            frontend_framework = "Vite"
-        elif any(f.endswith(".vue") for f in all_files_lower):
+        elif any(f.startswith("vite.config.") for f in root_files):
+            if "react" in scan.js_imports or "react" in (scan.package_json or {}).get("dependencies", {}):
+                frontend_framework = "React (Vite)"
+            elif "vue" in scan.js_imports:
+                frontend_framework = "Vue.js (Vite)"
+            else:
+                frontend_framework = "Vite"
+        elif any(f.endswith(".vue") for f in scan.root_files):
             frontend_framework = "Vue.js"
-        elif any(f.endswith(".svelte") for f in all_files_lower):
+        elif any(f.endswith(".svelte") for f in scan.root_files):
             frontend_framework = "Svelte"
-        elif raw["has_src_or_app"] and (
-            "App.tsx" in top_files or "App.jsx" in top_files
-            or any(f.endswith(".tsx") for f in all_files_lower)
+        elif scan.has_src_or_app and (
+            "App.tsx" in root_files or "App.jsx" in root_files
+            or "react" in scan.js_imports
         ):
             frontend_framework = "React"
 
-        if "manage.py" in top_files:
-            backend_framework = "Django"
-        elif "app.py" in top_files and not frontend_framework:
-            backend_framework = "Flask"
-        elif "main.py" in top_files:
-            backend_framework = "FastAPI (likely)"
-        elif "go.mod" in top_files:
-            backend_framework = "Go"
-        elif "requirements.txt" in top_files:
-            backend_framework = "Python"
-        elif "cargo.toml" in top_files:
-            backend_framework = "Rust"
-
-        if not frontend_framework and all_dirs_lower & {"components", "pages"}:
+        if not frontend_framework and (
+            "components" in scan.all_dir_names or "pages" in scan.all_dir_names
+        ):
             frontend_framework = "React"
 
-        return frontend_framework, backend_framework
+        # Backend
+        if "django" in scan.python_imports or "manage.py" in root_files:
+            backend_framework = "Django"
+        elif "fastapi" in scan.python_imports:
+            backend_framework = "FastAPI"
+        elif "flask" in scan.python_imports or "app.py" in root_files:
+            backend_framework = "Flask"
+        elif "express" in scan.js_imports:
+            backend_framework = "Express"
+        elif "main.py" in root_files and not frontend_framework:
+            backend_framework = "FastAPI (likely)"
+        elif "go.mod" in root_files:
+            backend_framework = "Go"
+        elif "requirements.txt" in root_files:
+            backend_framework = "Python"
+        elif "cargo.toml" in root_files:
+            backend_framework = "Rust"
+        elif scan.package_json and not frontend_framework:
+            deps = set()
+            for section in ("dependencies", "devDependencies", "peerDependencies"):
+                section_data = scan.package_json.get(section, {})
+                if isinstance(section_data, dict):
+                    deps.update(section_data.keys())
+            if "express" in deps:
+                backend_framework = "Express"
+            elif "@nestjs/core" in deps:
+                backend_framework = "NestJS"
 
-    @staticmethod
-    def _has_docker(workspace_path: Path) -> bool:
-        docker_names = {"dockerfile", "Dockerfile", "docker-compose.yml",
-                        "docker-compose.yaml", "compose.yml", "compose.yaml",
-                        ".dockerignore"}
-        try:
-            for entry in workspace_path.iterdir():
-                if entry.name in docker_names:
-                    return True
-            return False
-        except PermissionError:
-            return False
+        return frontend_framework, backend_framework
 
     @staticmethod
     def _has_ci_cd(workspace_path: Path) -> bool:
@@ -421,82 +475,139 @@ class ProjectAnalyzerCoreService:
         self.project_repo = ProjectRepository(db)
         self.metadata_repo = MetadataRepository(db)
 
+    def _detect_project_type(self, scan: ProjectScanResult) -> str:
+        top_dirs = {d.lower() for d in scan.root_dirs}
+        top_files = {f.lower() for f in scan.root_files}
+
+        has_python = scan.language_counts.get("Python", 0) > 0
+        has_js = (scan.language_counts.get("JavaScript", 0) > 0 or scan.language_counts.get("TypeScript", 0) > 0)
+        has_react = "react" in scan.js_imports
+        has_django = "django" in scan.python_imports
+        has_fastapi = "fastapi" in scan.python_imports
+        has_flask = "flask" in scan.python_imports
+
+        is_next = has_js and (
+            "next.config.js" in top_files or "next.config.mjs" in top_files or "next.config.ts" in top_files
+            or "next" in {f.lower() for f in (scan.package_json or {}).get("dependencies", {})}
+        )
+
+        has_backend_dir = bool(top_dirs & {"backend", "server", "api"})
+        has_frontend_dir = bool(top_dirs & {"frontend", "client", "ui"})
+        has_packages_dir = "packages" in top_dirs
+        has_multiple_services = len([d for d in top_dirs if "service" in d]) >= 2
+
+        has_main_py = "main.py" in top_files
+        has_app_py = "app.py" in top_files
+        has_manage_py = "manage.py" in top_files
+        has_go_mod = "go.mod" in top_files
+        has_cargo_toml = "cargo.toml" in top_files
+        has_package_json = "package.json" in top_files
+        has_angular_json = "angular.json" in top_files
+        has_vite_config = any(f.startswith("vite.config.") for f in top_files)
+        has_dockerfile = scan.dockerfile_content is not None
+        has_docker_compose = scan.docker_compose_content is not None
+        has_k8s = bool(scan.all_dir_names & {"k8s", "kubernetes", "manifests", "helm", "chart"})
+        has_notebooks = any(f.endswith(".ipynb") for f in scan.all_files)
+
+        ml_deps = {"tensorflow", "torch", "sklearn", "transformers", "keras"}
+        has_ml = bool(scan.python_imports & ml_deps) or any(
+            any(m in d for m in ml_deps) for d in scan.requirements_txt_deps
+        )
+        ds_dirs = top_dirs & {"notebooks", "data", "datasets", "analysis"}
+        has_ds = has_notebooks or bool(ds_dirs)
+
+        if has_packages_dir and not has_frontend_dir and not has_backend_dir:
+            return "Monorepo"
+        if has_docker_compose and (has_multiple_services or has_k8s):
+            return "Microservice"
+        if has_frontend_dir and has_backend_dir:
+            return "Full Stack"
+        if is_next:
+            return "Next.js Application"
+        if has_angular_json:
+            return "Angular Application"
+        if has_vite_config and has_react:
+            return "React Application"
+        if has_django or has_manage_py:
+            return "Django Application"
+        if has_fastapi:
+            return "FastAPI Application"
+        if has_flask or has_app_py:
+            return "Flask Application"
+        if has_ml or has_ds:
+            if has_notebooks:
+                return "Data Science Project"
+            return "Machine Learning Project"
+        if has_main_py or has_app_py:
+            return "API"
+        if has_go_mod:
+            return "Backend"
+        if has_cargo_toml:
+            return "CLI"
+        if has_package_json and has_js:
+            if has_backend_dir or has_frontend_dir:
+                return "Full Stack"
+            return "Frontend"
+        if has_dockerfile and not has_frontend_dir and not has_backend_dir:
+            return "Microservice"
+        if has_k8s:
+            return "Microservice"
+        if scan.has_src_or_app:
+            return "Library"
+        if scan.needs_analysis:
+            return "Unknown"
+        return "Unknown"
+
     def analyze(self, user_id: int, project_id: int) -> AnalyzerResponse:
-        # Prerequisite 1 & 2: Project exists and owned by user
         project = self.project_repo.get_by_id(project_id)
         if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
         if project.user_id != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
-        # Prerequisite 3: Project must be extracted
         if project.extraction_status != "extracted":
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Project workspace has not been extracted. Please extract before analyzing.",
-            )
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Project workspace has not been extracted. Please extract before analyzing.")
 
-        # Prerequisite 4: Workspace directory must exist on disk
         workspace_path = get_workspace_path(project_id)
         if not workspace_path.exists():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Workspace directory not found. Please re-extract the project.",
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace directory not found. Please re-extract the project.")
 
-        # Prerequisite 5: Validation must have been completed
         if not _is_workspace_healthy(workspace_path):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Workspace validation has not been completed. Please run validation first.",
-            )
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Workspace validation has not been completed. Please run validation first.")
 
-        # Prerequisite 6: Metadata must be available
         metadata = self.metadata_repo.get_by_project_id(project_id)
         if not metadata:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Project metadata not available. Please scan project metadata first.",
-            )
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Project metadata not available. Please scan project metadata first.")
 
-        repo = ProjectAnalyzerRepository(workspace_path)
-        raw = repo.scan()
+        scanner = ProjectScanner()
+        scan_result = scanner.scan(workspace_path)
+
+        project_type = self._detect_project_type(scan_result)
+
+        repo = ProjectAnalyzerRepository(workspace_path, scan_result)
+        raw = repo.scan(project_type=project_type)
 
         workspace_status = "Ready"
         if raw["needs_analysis"]:
             workspace_status = "Empty"
 
-        project_type = project.language or "Unknown"
-
-        # Build technology stack
         languages = raw.get("languages", [])
 
-        top_level_files = [f.name for f in workspace_path.iterdir() if f.is_file()]
-        fake_raw = {
-            "top_level_files": top_level_files,
-            "all_files": [str(f.relative_to(workspace_path)) for f in workspace_path.rglob("*") if f.is_file() and not any(p.startswith(".") for p in f.relative_to(workspace_path).parts)],
-            "all_dirs": [str(d.relative_to(workspace_path)) for d in workspace_path.rglob("*") if d.is_dir() and not any(p.startswith(".") for p in d.relative_to(workspace_path).parts)],
-            "has_src_or_app": any(d.name.lower() in {"src", "app"} for d in workspace_path.iterdir() if d.is_dir()),
-        }
-        detected_frameworks = old_detect_frameworks(workspace_path, {l: 1 for l in languages})
+        detector = FrameworkDetectorRepository(scan_result)
+        framework_items = detector.detect_frameworks()
+        detected_frameworks = sorted({f["name"] for f in framework_items})
 
-        databases: list[str] = []
-        try:
-            from app.detection.detector import detect_databases
-            databases = detect_databases(workspace_path)
-        except Exception:
-            pass
+        database_items = detector.detect_databases()
+        databases = sorted({d["name"] for d in database_items})
+
+        pm_items = detector.detect_package_managers()
+        package_managers = sorted({p["name"] for p in pm_items})
 
         tech_stack = TechnologyStack(
             languages=languages,
-            frameworks=sorted(detected_frameworks),
+            frameworks=detected_frameworks,
             databases=databases,
+            package_managers=package_managers,
         )
 
         cfg = raw.get("config_flags", {})
@@ -525,7 +636,7 @@ class ProjectAnalyzerCoreService:
         )
 
         workspace_summary = self._build_workspace_summary(
-            raw, project_type, metadata,
+            scan_result, project_type, metadata,
         )
 
         return AnalyzerResponse(
@@ -543,62 +654,74 @@ class ProjectAnalyzerCoreService:
         )
 
     @staticmethod
-    def _build_workspace_summary(raw: dict, project_type: str, metadata) -> str:
+    def _build_workspace_summary(scan: ProjectScanResult, project_type: str, metadata) -> str:
         parts: list[str] = []
 
-        file_count = raw["total_files"]
-        folder_count = raw["total_folders"]
-        size_bytes = raw["workspace_size"]
-
+        file_count = scan.total_files
+        folder_count = scan.total_folders
+        size_bytes = scan.workspace_size
         size_str = _format_size(size_bytes)
 
-        parts.append(
-            f"Project contains {file_count} file{'s' if file_count != 1 else ''} "
+        lang_counts = scan.language_counts
+        langs = sorted(lang_counts.keys(), key=lambda l: -lang_counts[l])
+        primary_lang = langs[0] if langs else None
+
+        detector = FrameworkDetectorRepository(scan)
+        frameworks = [f["name"] for f in detector.detect_frameworks()]
+        databases = [d["name"] for d in detector.detect_databases()]
+        pms = [p["name"] for p in detector.detect_package_managers()]
+
+        # Build a meaningful description
+        desc_parts: list[str] = []
+
+        if primary_lang:
+            lang_desc = primary_lang
+            if frameworks:
+                fw_names = frameworks[:3]
+                if len(fw_names) == 1:
+                    lang_desc = f"{fw_names[0]} ({primary_lang})"
+                else:
+                    lang_desc = f"{' / '.join(fw_names)}"
+            desc_parts.append(f"This is a {project_type.lower()} project using {lang_desc}.")
+
+        if databases:
+            if len(databases) == 1:
+                desc_parts.append(f"Uses {databases[0]} as the database.")
+            else:
+                desc_parts.append(f"Uses {', '.join(databases[:3])} as data stores.")
+
+        has_frontend = any(v > 0 for k, v in scan.language_counts.items()
+                          if k in {"JavaScript", "TypeScript", "HTML", "CSS"})
+        has_ml = any(imp in scan.python_imports for imp in
+                    ["tensorflow", "torch", "sklearn", "transformers"])
+        has_test = scan.has_tests
+
+        if has_frontend and primary_lang and primary_lang not in ("JavaScript", "TypeScript", "HTML", "CSS"):
+            desc_parts.append("Includes frontend assets.")
+        if has_ml:
+            desc_parts.append("Machine Learning libraries detected.")
+        if has_test:
+            desc_parts.append("Test suites are configured.")
+
+        # File/folder stats
+        stats = (
+            f"The project contains {file_count} file{'s' if file_count != 1 else ''} "
             f"across {folder_count} director{'y' if folder_count == 1 else 'ies'} "
             f"({size_str})."
         )
+        desc_parts.append(stats)
 
-        langs = raw.get("languages", [])
-        if langs:
-            top_langs = langs[:3]
-            parts.append(f"Primary language{'s' if len(top_langs) > 1 else ''}: {', '.join(top_langs)}.")
+        if pms:
+            desc_parts.append(f"Package manager{'s' if len(pms) > 1 else ''}: {', '.join(pms[:3])}.")
 
-        if project_type and project_type != "Unknown":
-            parts.append(f"Detected as a {project_type} project.")
-
-        meta_langs = getattr(metadata, "languages", None) or []
-        meta_frameworks = getattr(metadata, "frameworks", None) or []
-        if meta_frameworks:
-            parts.append(f"Framework{'s' if len(meta_frameworks) > 1 else ''}: {', '.join(sorted(meta_frameworks))}.")
-
-        cfg = raw.get("config_flags", {})
         configs_present = []
-        if cfg.get("readme"): configs_present.append("README")
-        if cfg.get("dockerfile"): configs_present.append("Dockerfile")
-        if cfg.get("docker_compose"): configs_present.append("Docker Compose")
-        if cfg.get("gitignore"): configs_present.append(".gitignore")
+        if scan.config_flags.get("readme"): configs_present.append("README")
+        if scan.dockerfile_content: configs_present.append("Dockerfile")
+        if scan.gitignore_content: configs_present.append(".gitignore")
         if configs_present:
-            parts.append(f"Config: {', '.join(configs_present)}.")
+            desc_parts.append(f"Config: {', '.join(configs_present)}.")
 
-        cat = raw.get("folder_categories", {})
-        has_frontend = cat.get("frontend", 0) > 0
-        has_backend = cat.get("backend", 0) > 0
-        has_tests = cat.get("tests", 0) > 0
-        has_docs = cat.get("docs", 0) > 0
-
-        if has_frontend and has_backend:
-            parts.append("Both frontend and backend directories detected.")
-        elif has_frontend:
-            parts.append("Frontend directories detected.")
-        elif has_backend:
-            parts.append("Backend directories detected.")
-
-        if has_tests:
-            parts.append("Test directories present.")
-        if has_docs:
-            parts.append("Documentation directories present.")
-
-        return " ".join(parts)
+        return " ".join(desc_parts)
 
 
 def _is_workspace_healthy(workspace_path: Path) -> bool:

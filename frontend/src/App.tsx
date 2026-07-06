@@ -11,8 +11,22 @@ import { WorkspacePage } from "@/pages/workspace-page";
 import { ProjectOverviewPage } from "@/pages/project-overview-page";
 import { WorkspaceValidationPage } from "@/pages/workspace-validation-page";
 import { AnalysisReadinessPage } from "@/pages/analysis-readiness-page";
-import { ProjectAnalyzerPage } from "@/pages/project-analyzer-page";
 import { UploadPage } from "@/pages/upload-page";
+import {
+  ProjectAnalyzerLayout,
+  Overview,
+  FrameworkIntelligence,
+  TechnologyStack,
+  FolderStructure,
+  ModuleDetection,
+  ArchitectureDetection,
+  EntryPoints,
+  ConfigurationIntelligence,
+  DependencyAnalysis,
+  Recommendations,
+} from "@/pages/project-analyzer";
+import { CodeIntelligencePage } from "@/pages/code-intelligence-page";
+import { CodeQualityPage } from "@/pages/code-quality-page";
 import { ScanHistoryPage } from "@/pages/scan-history-page";
 import { AiStatusPage } from "@/pages/ai-status-page";
 import { SettingsPage } from "@/pages/settings-page";
@@ -36,8 +50,21 @@ export function App() {
                 <Route path="/projects/:projectId/overview" element={<ProjectOverviewPage />} />
                 <Route path="/projects/:projectId/validation" element={<WorkspaceValidationPage />} />
                 <Route path="/projects/:projectId/ready" element={<AnalysisReadinessPage />} />
-                <Route path="/projects/:projectId/analyze" element={<ProjectAnalyzerPage />} />
-                <Route path="/projects/:projectId/analyzer" element={<ProjectAnalyzerPage />} />
+                <Route path="/projects/:projectId/analyze" element={<Navigate to="../analyzer" replace />} />
+                <Route path="/projects/:projectId/analyzer" element={<ProjectAnalyzerLayout />}>
+                  <Route index element={<Overview />} />
+                  <Route path="framework" element={<FrameworkIntelligence />} />
+                  <Route path="technology" element={<TechnologyStack />} />
+                  <Route path="folders" element={<FolderStructure />} />
+                  <Route path="modules" element={<ModuleDetection />} />
+                  <Route path="architecture" element={<ArchitectureDetection />} />
+                  <Route path="entry-points" element={<EntryPoints />} />
+                  <Route path="configuration" element={<ConfigurationIntelligence />} />
+                  <Route path="dependencies" element={<DependencyAnalysis />} />
+                  <Route path="recommendations" element={<Recommendations />} />
+                  <Route path="code-intelligence" element={<CodeIntelligencePage />} />
+                  <Route path="code-quality" element={<CodeQualityPage />} />
+                </Route>
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/scan-history" element={<ScanHistoryPage />} />
                 <Route path="/ai-status" element={<AiStatusPage />} />

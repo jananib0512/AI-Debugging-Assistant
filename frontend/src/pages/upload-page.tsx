@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   CheckCircle2,
+  Clock,
   File,
   FileArchive,
+  FileWarning,
   FolderOpen,
   HardDrive,
   Loader2,
@@ -29,7 +31,9 @@ import { cn } from "@/lib/utils";
 import type { ApiError } from "@/types/auth";
 import type { Project } from "@/types/project";
 
-const MAX_SIZE = 500 * 1024 * 1024;
+const MAX_SIZE = 1024 * 1024 * 1024;
+const SUPPORTED_FORMATS = [".zip", ".tar.gz", ".tgz", ".7z", ".rar"] as const;
+const ACCEPT_STRING = ".zip,.tar.gz,.tgz,.7z,.rar";
 
 const projectSchema = z.object({
   project_name: z.string().min(1, "Project name is required"),
@@ -47,6 +51,9 @@ interface UploadState {
   file: File | null;
   status: "idle" | "selected" | "uploading" | "uploaded";
   progress: number;
+  uploadedBytes: number;
+  totalBytes: number;
+  elapsedMs: number;
   error: string | null;
   project: Project | null;
 }
@@ -63,6 +70,9 @@ export function UploadPage() {
     file: null,
     status: "idle",
     progress: 0,
+    uploadedBytes: 0,
+    totalBytes: 0,
+    elapsedMs: 0,
     error: null,
     project: null,
   });
@@ -85,14 +95,16 @@ export function UploadPage() {
   });
 
   const validateFile = (file: File): string | null => {
-    if (!file.name.toLowerCase().endsWith(".zip")) {
-      return "Only .zip files are supported";
+    const name = file.name.toLowerCase();
+    const valid = SUPPORTED_FORMATS.some((fmt) => name.endsWith(fmt));
+    if (!valid) {
+      return "Unsupported archive format. Supported formats: .zip, .tar.gz, .tgz, .7z, .rar";
     }
     if (file.size === 0) {
       return "File is empty";
     }
     if (file.size > MAX_SIZE) {
-      return "File exceeds the maximum upload size of 500 MB";
+      return "File exceeds the maximum upload size of 1 GB";
     }
     return null;
   };
@@ -104,6 +116,9 @@ export function UploadPage() {
         file: null,
         status: "idle",
         progress: 0,
+        uploadedBytes: 0,
+        totalBytes: 0,
+        elapsedMs: 0,
         error: validationError,
         project: null,
       });
@@ -113,6 +128,9 @@ export function UploadPage() {
       file,
       status: "selected",
       progress: 0,
+      uploadedBytes: 0,
+      totalBytes: file.size,
+      elapsedMs: 0,
       error: null,
       project: null,
     });
@@ -154,6 +172,9 @@ export function UploadPage() {
       file: null,
       status: "idle",
       progress: 0,
+      uploadedBytes: 0,
+      totalBytes: 0,
+      elapsedMs: 0,
       error: null,
       project: null,
     });
@@ -165,6 +186,9 @@ export function UploadPage() {
       file: null,
       status: "idle",
       progress: 0,
+      uploadedBytes: 0,
+      totalBytes: 0,
+      elapsedMs: 0,
       error: null,
       project: null,
     });
@@ -193,10 +217,12 @@ export function UploadPage() {
       return;
     }
     const messages = [
-      "Scanning project...",
-      "Ignoring dependency folders...",
+      "Scanning project archive...",
+      "Ignoring dependency and build folders...",
       "Counting source files...",
       "Extracting workspace...",
+      "Validating project structure...",
+      "Cleaning up temporary files...",
     ];
     let index = 0;
     setExtractionStatusMessage(messages[index]!);
@@ -216,11 +242,15 @@ export function UploadPage() {
   const onSubmit = async (data: ProjectForm) => {
     if (!upload.file) return;
 
-    setUpload((prev) => ({ ...prev, status: "uploading", progress: 0, error: null }));
+    setUpload((prev) => ({
+      ...prev, status: "uploading", progress: 0, uploadedBytes: 0,
+      totalBytes: upload.file!.size, elapsedMs: 0, error: null,
+    }));
     setExtraction({ status: "idle", error: null });
 
     const controller = new AbortController();
     abortRef.current = controller;
+    const uploadStartTime = Date.now();
 
     try {
       const createRes = await api.post<Project>("/projects", {
@@ -240,10 +270,14 @@ export function UploadPage() {
           headers: { "Content-Type": "multipart/form-data" },
           signal: controller.signal,
           onUploadProgress: (e: AxiosProgressEvent) => {
-            if (e.total) {
-              const percent = Math.round((e.loaded * 100) / e.total);
-              setUpload((prev) => ({ ...prev, progress: percent }));
-            }
+            const elapsed = Date.now() - uploadStartTime;
+            setUpload((prev) => ({
+              ...prev,
+              progress: e.total ? Math.round((e.loaded * 100) / e.total) : 0,
+              uploadedBytes: e.loaded,
+              totalBytes: e.total || prev.totalBytes,
+              elapsedMs: elapsed,
+            }));
           },
         },
       );
@@ -252,6 +286,9 @@ export function UploadPage() {
         file: null,
         status: "uploaded",
         progress: 100,
+        uploadedBytes: upload.file!.size,
+        totalBytes: upload.file!.size,
+        elapsedMs: Date.now() - uploadStartTime,
         error: null,
         project: uploadRes.data,
       });
@@ -263,6 +300,9 @@ export function UploadPage() {
           file: null,
           status: "idle",
           progress: 0,
+          uploadedBytes: 0,
+          totalBytes: 0,
+          elapsedMs: 0,
           error: null,
           project: null,
         });
@@ -277,6 +317,7 @@ export function UploadPage() {
       setUpload((prev) => ({
         ...prev,
         status: "selected",
+        progress: 0,
         error: message,
       }));
     }
@@ -399,13 +440,13 @@ export function UploadPage() {
               <Card>
                 <div className="p-6">
                   <h3 className="text-sm font-semibold text-[#111827] mb-4">
-                    Upload ZIP file
+                    Upload project archive
                   </h3>
 
                   <input
                     ref={inputRef}
                     type="file"
-                    accept=".zip"
+                    accept={ACCEPT_STRING}
                     className="hidden"
                     onChange={handleInputChange}
                   />
@@ -422,6 +463,11 @@ export function UploadPage() {
                         <p className="mt-1 text-sm text-[#6B7280] text-center max-w-sm">
                           Please wait while we prepare your workspace.
                         </p>
+                        {upload.uploadedBytes > 0 && (
+                          <p className="mt-2 text-xs text-[#6B7280]">
+                            Uploaded {formatSize(upload.uploadedBytes)} in {formatTime(upload.elapsedMs)}
+                          </p>
+                        )}
                       </div>
                       <div className="mx-auto w-full max-w-sm">
                         <div className="h-2 w-full rounded-full bg-[#F3F4F6] overflow-hidden">
@@ -506,6 +552,26 @@ export function UploadPage() {
                               transition={{ duration: 0.3 }}
                               className="h-full rounded-full bg-[#2563EB]"
                             />
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-[#6B7280]">
+                            <span>
+                              {formatSize(upload.uploadedBytes)} / {formatSize(upload.totalBytes)}
+                            </span>
+                            {upload.elapsedMs > 0 && upload.uploadedBytes > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formatTime(upload.elapsedMs)}
+                                {upload.progress > 0 && upload.progress < 100 && (
+                                  <span>
+                                    · ~{formatTime(
+                                      Math.round(
+                                        (upload.elapsedMs / upload.progress) * (100 - upload.progress),
+                                      ),
+                                    )} left
+                                  </span>
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
@@ -593,7 +659,7 @@ export function UploadPage() {
                         <Upload className="h-6 w-6 text-[#6B7280]" />
                       </div>
                       <h3 className="text-sm font-medium text-[#111827]">
-                        Drag & drop your ZIP file here
+                        Drag & drop your archive file here
                       </h3>
                       <p className="mt-1 text-xs text-[#6B7280]">
                         or click to browse
@@ -601,10 +667,10 @@ export function UploadPage() {
                       <div className="mt-4 flex items-center gap-3 text-[11px] text-[#6B7280]">
                         <span className="flex items-center gap-1">
                           <FileArchive className="h-3.5 w-3.5" />
-                          .zip only
+                          .zip, .tar.gz, .tgz, .7z, .rar
                         </span>
                         <span className="h-3 w-px bg-[#E5E7EB]" />
-                        <span>Max 500 MB</span>
+                        <span>Max 1 GB</span>
                       </div>
                     </div>
                   )}
@@ -650,21 +716,32 @@ export function UploadPage() {
                       <FileArchive className="h-4 w-4 text-[#2563EB] mt-0.5 shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-[#111827]">
-                          ZIP format only
+                          Multiple archive formats
                         </p>
                         <p className="text-xs text-[#6B7280] mt-0.5">
-                          Your project must be compressed as a .zip file. Other formats are not supported.
+                          Supports .zip, .tar.gz, .tgz, .7z, and .rar archives.
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <File className="h-4 w-4 text-[#2563EB] mt-0.5 shrink-0" />
+                      <HardDrive className="h-4 w-4 text-[#2563EB] mt-0.5 shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-[#111827]">
-                          Maximum 500 MB
+                          Maximum 1 GB
                         </p>
                         <p className="text-xs text-[#6B7280] mt-0.5">
-                          Upload size is limited to 500 MB per project.
+                          Upload size is limited to 1 GB per project.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <FileWarning className="h-4 w-4 text-[#2563EB] mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-[#111827]">
+                          Validation & security
+                        </p>
+                        <p className="text-xs text-[#6B7280] mt-0.5">
+                          Corrupted, password-protected, or oversized archives (over 100k files, over 2 GB) are rejected.
                         </p>
                       </div>
                     </div>
@@ -675,7 +752,7 @@ export function UploadPage() {
                           Auto-extraction
                         </p>
                         <p className="text-xs text-[#6B7280] mt-0.5">
-                          ZIP files are automatically extracted to a dedicated workspace while preserving folder structure.
+                          Archives are automatically extracted to a dedicated workspace while preserving folder structure.
                         </p>
                       </div>
                     </div>

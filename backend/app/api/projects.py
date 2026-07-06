@@ -8,7 +8,31 @@ from app.schemas.project import (
     ProjectResponse,
     ProjectUpdateRequest,
 )
-from app.schemas.project_analyzer import AnalyzerResponse
+from app.schemas.project_analyzer import (
+    AnalyzerResponse,
+    AnalyzerValidationResponse,
+    ArchitectureDetectionResponse,
+    CodeQualityResponse,
+    SourceCodeIntelligenceResponse,
+    ComplexityAnalysisResponse,
+    ConfigurationIntelligenceResponse,
+    EntryPointDetectionResponse,
+    FrameworkIntelligenceResponse,
+    ModuleDetectionResponse,
+    ProjectInsightsResponse,
+    ProjectIntelligenceResponse,
+)
+from app.services.architecture_detection_service import ArchitectureDetectionService
+from app.services.complexity_analysis_service import ComplexityAnalysisService
+from app.services.configuration_intelligence_service import ConfigurationIntelligenceService
+from app.services.entry_point_detection_service import EntryPointDetectionService
+from app.services.framework_intelligence_service import FrameworkIntelligenceService
+from app.services.module_detection_service import ModuleDetectionService
+from app.services.project_insights_service import ProjectInsightsService
+from app.services.project_intelligence_service import ProjectIntelligenceService
+from app.services.project_validation_service import ProjectValidationService
+from app.services.code_quality_service import CodeQualityService
+from app.services.source_code_intelligence_service import SourceCodeIntelligenceService
 from app.services.extraction_service import ExtractionService
 from app.services.metadata_service import MetadataService
 from app.services.project_analyzer_service import (
@@ -146,6 +170,127 @@ def get_project_analyzer(
     project_id: int,
     current_user: User = Depends(require_auth),
     service: ProjectAnalyzerCoreService = Depends(ProjectAnalyzerCoreService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/entry-points", response_model=EntryPointDetectionResponse)
+def get_entry_points(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: EntryPointDetectionService = Depends(EntryPointDetectionService),
+):
+    return service.detect(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/architecture", response_model=ArchitectureDetectionResponse)
+def get_architecture(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ArchitectureDetectionService = Depends(ArchitectureDetectionService),
+):
+    return service.detect(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/modules", response_model=ModuleDetectionResponse)
+def get_modules(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ModuleDetectionService = Depends(ModuleDetectionService),
+):
+    return service.detect(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/frameworks", response_model=FrameworkIntelligenceResponse)
+def get_frameworks(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: FrameworkIntelligenceService = Depends(FrameworkIntelligenceService),
+):
+    return service.detect(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/configuration", response_model=ConfigurationIntelligenceResponse)
+def get_configuration(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ConfigurationIntelligenceService = Depends(ConfigurationIntelligenceService),
+):
+    return service.detect(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/complexity", response_model=ComplexityAnalysisResponse)
+def get_complexity(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ComplexityAnalysisService = Depends(ComplexityAnalysisService),
+):
+    return service.detect(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/project-insights", response_model=ProjectInsightsResponse)
+def get_project_insights(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ProjectInsightsService = Depends(ProjectInsightsService),
+):
+    return service.detect(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/project-intelligence", response_model=ProjectIntelligenceResponse)
+def get_project_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ProjectIntelligenceService = Depends(ProjectIntelligenceService),
+):
+    return service.detect(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/analyzer-validation", response_model=AnalyzerValidationResponse)
+def get_analyzer_validation(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ProjectValidationService = Depends(ProjectValidationService),
+):
+    return service.validate(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/code-intelligence", response_model=SourceCodeIntelligenceResponse)
+def get_code_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: SourceCodeIntelligenceService = Depends(SourceCodeIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/code-quality", response_model=CodeQualityResponse)
+def get_code_quality(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: CodeQualityService = Depends(CodeQualityService),
 ):
     return service.analyze(
         user_id=current_user.id, project_id=project_id
