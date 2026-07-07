@@ -5,6 +5,7 @@ import {
   ArrowLeft, Shield, AlertTriangle, Award, CheckCircle, Lightbulb, Zap, RefreshCw
 } from "lucide-react";
 import { useAnalysis } from "@/contexts/AnalysisContext";
+import { RelatedAnalysisNav } from "@/components/project-analyzer/RelatedAnalysisNav";
 
 export function Recommendations() {
   const navigate = useNavigate();
@@ -92,9 +93,15 @@ export function Recommendations() {
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <button onClick={() => navigate(`/projects/${projectId}/analyzer`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#111827]">
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to Overview
-          </button>
+          <div className="flex items-center gap-2 mb-1">
+            <button onClick={() => navigate(`/projects/${projectId}/analyzer`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#111827]">
+              <ArrowLeft className="h-3.5 w-3.5" /> Back to Overview
+            </button>
+            <span className="text-[#D1D5DB]">|</span>
+            <button onClick={() => navigate(`/projects/${projectId}/analyzer/unified-intelligence`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8]">
+              Back to Unified Dashboard
+            </button>
+          </div>
           <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Project Analyzer</p>
           <h1 className="mt-0.5 text-xl font-bold text-[#111827]">AI Recommendations</h1>
         </div>
@@ -280,6 +287,8 @@ export function Recommendations() {
           </div>
         </div>
       )}
+
+      {projectId && <RelatedAnalysisNav projectId={projectId} currentPage="recommendations" />}
 
     </motion.div>
   );

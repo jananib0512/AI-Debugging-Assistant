@@ -20,15 +20,24 @@ import {
   FolderStructure,
   ModuleDetection,
   ArchitectureDetection,
+  CallGraphIntelligence,
   EntryPoints,
   ConfigurationIntelligence,
   DependencyAnalysis,
+  FileIntelligence,
   Recommendations,
   FileAnalysis,
   FileDetail,
   FunctionClassAnalysis,
   FunctionClassDetail,
+  FunctionClassIntelligence,
   ImportDependencyAnalysis,
+  SemanticIntelligence,
+  UnifiedIntelligence,
+  RiskIntelligence,
+  SecurityIntelligence,
+  PerformanceIntelligence,
+  MaintainabilityIntelligence,
 } from "@/pages/project-analyzer";
 import { CodeIntelligencePage } from "@/pages/code-intelligence-page";
 import { CodeQualityPage } from "@/pages/code-quality-page";
@@ -71,9 +80,26 @@ export function App() {
                   <Route path="code-quality" element={<CodeQualityPage />} />
                   <Route path="file-analysis" element={<FileAnalysis />} />
                   <Route path="file-analysis/:filePath" element={<FileDetail />} />
+                  <Route path="file-intelligence" element={<FileIntelligence />} />
                   <Route path="function-class" element={<FunctionClassAnalysis />} />
                   <Route path="function-class/:filePath/:itemName" element={<FunctionClassDetail />} />
                   <Route path="import-dependency" element={<ImportDependencyAnalysis />} />
+                  <Route path="function-class-intelligence" element={<FunctionClassIntelligence />} />
+                  <Route path="call-graph" element={<CallGraphIntelligence />} />
+                  <Route path="semantic-intelligence" element={<SemanticIntelligence />} />
+                  <Route path="unified-intelligence" element={<UnifiedIntelligence />} />
+                  <Route path="risk-intelligence" element={<RiskIntelligence />} />
+                  <Route path="security-intelligence" element={<SecurityIntelligence />} />
+                  <Route path="performance-intelligence" element={<PerformanceIntelligence />} />
+                  <Route path="maintainability-intelligence" element={<MaintainabilityIntelligence />} />
+                  <Route path="*" element={
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <div className="rounded-lg border border-[#E5E7EB] bg-white px-6 py-8 text-center shadow-sm max-w-md">
+                        <h2 className="text-lg font-semibold text-[#111827]">Analyzer Not Available</h2>
+                        <p className="mt-2 text-sm text-[#6B7280]">This analyzer is not available yet.</p>
+                      </div>
+                    </div>
+                  } />
                 </Route>
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/scan-history" element={<ScanHistoryPage />} />

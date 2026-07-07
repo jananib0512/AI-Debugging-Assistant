@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { useAnalysis } from "@/contexts/AnalysisContext";
+import { RelatedAnalysisNav } from "@/components/project-analyzer/RelatedAnalysisNav";
 
 export function FolderStructure() {
   const navigate = useNavigate();
@@ -21,9 +22,15 @@ export function FolderStructure() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-      <button onClick={() => navigate(`/projects/${projectId}/analyzer`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#111827]">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to Overview
-      </button>
+      <div className="flex items-center gap-2">
+        <button onClick={() => navigate(`/projects/${projectId}/analyzer`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#111827]">
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to Overview
+        </button>
+        <span className="text-[#D1D5DB]">|</span>
+        <button onClick={() => navigate(`/projects/${projectId}/analyzer/unified-intelligence`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8]">
+          Back to Unified Dashboard
+        </button>
+      </div>
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Project Analyzer</p>
         <h1 className="mt-0.5 text-xl font-bold text-[#111827]">Folder Structure</h1>
@@ -85,6 +92,8 @@ export function FolderStructure() {
         <p className="mb-3 text-sm font-semibold text-[#111827]">Project Summary</p>
         <p className="text-sm leading-relaxed text-[#374151]">{data.workspace_summary}</p>
       </div>
+
+      {projectId && <RelatedAnalysisNav projectId={projectId} currentPage="folders" />}
 
     </motion.div>
   );

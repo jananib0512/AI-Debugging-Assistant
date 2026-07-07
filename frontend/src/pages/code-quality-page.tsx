@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -29,6 +29,7 @@ import { getCodeQuality } from "@/lib/project-analyzer";
 import type {
   CodeQualityResponse,
 } from "@/types/project-analyzer";
+import { RelatedAnalysisNav } from "@/components/project-analyzer/RelatedAnalysisNav";
 
 type SeverityFilter = string | "all";
 type SentimentFilter = string | "all";
@@ -114,6 +115,7 @@ function IssueBadge({ severity }: { severity: string }) {
 
 export function CodeQualityPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const [data, setData] = useState<CodeQualityResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -296,6 +298,17 @@ export function CodeQualityPage() {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
 
+      {projectId && (
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate(`/projects/${projectId}/analyzer`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#111827]">
+            ← Back to Overview
+          </button>
+          <span className="text-[#D1D5DB]">|</span>
+          <button onClick={() => navigate(`/projects/${projectId}/analyzer/unified-intelligence`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8]">
+            Back to Unified Dashboard
+          </button>
+        </div>
+      )}
       {/* Hero */}
       <motion.div variants={itemVariants} className="rounded-xl border border-[#E5E7EB] bg-gradient-to-br from-[#7C3AED] to-[#4F46E5] p-6 text-white">
         <div className="flex items-center justify-between">
@@ -863,6 +876,8 @@ export function CodeQualityPage() {
           )}
         </div>
       </motion.div>
+
+      {projectId && <RelatedAnalysisNav projectId={projectId} currentPage="code-quality" />}
 
     </motion.div>
   );

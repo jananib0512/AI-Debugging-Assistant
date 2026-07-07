@@ -3,18 +3,27 @@ import type {
   AnalyzerResponse,
   AnalyzerValidationResponse,
   ArchitectureDetectionResponse,
+  CallGraphResponse,
   CodeQualityResponse,
   ConfigurationIntelligenceResponse,
   EntryPointDetectionResponse,
   FileAnalysisResponse,
+  FileIntelligenceResponse,
   FrameworkIntelligenceResponse,
+  FuncClassIntelligenceResponse,
   FunctionClassResponse,
   ImportDependencyResponse,
   ModuleDetectionResponse,
   ProjectAnalysis,
   ProjectInsightsResponse,
   ProjectIntelligenceResponse,
+  RiskIntelligenceResponse,
+  SecurityIntelligenceResponse,
+  PerformanceIntelligenceResponse,
+  MaintainabilityIntelligenceResponse,
+  SemanticResponse,
   SourceCodeIntelligenceResponse,
+  UnifiedIntelligenceResponse,
 } from "@/types/project-analyzer";
 
 export async function getProjectAnalysis(
@@ -148,6 +157,87 @@ export async function getCodeQuality(
 ): Promise<CodeQualityResponse> {
   const res = await api.get<CodeQualityResponse>(
     `/projects/${projectId}/code-quality`,
+  );
+  return res.data;
+}
+
+export async function getFileIntelligence(
+  projectId: number,
+): Promise<FileIntelligenceResponse> {
+  const res = await api.get<FileIntelligenceResponse>(
+    `/projects/${projectId}/file-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getCallGraph(
+  projectId: number,
+): Promise<CallGraphResponse> {
+  const res = await api.get<CallGraphResponse>(
+    `/projects/${projectId}/call-graph`,
+  );
+  return res.data;
+}
+
+export async function getFunctionClassIntelligence(
+  projectId: number,
+): Promise<FuncClassIntelligenceResponse> {
+  const res = await api.get<FuncClassIntelligenceResponse>(
+    `/projects/${projectId}/function-class-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getSemanticIntelligence(
+  projectId: number,
+): Promise<SemanticResponse> {
+  const res = await api.get<SemanticResponse>(
+    `/projects/${projectId}/semantic-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getUnifiedIntelligence(
+  projectId: number,
+): Promise<UnifiedIntelligenceResponse> {
+  const res = await api.get<UnifiedIntelligenceResponse>(
+    `/projects/${projectId}/unified-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getRiskIntelligence(
+  projectId: number,
+): Promise<RiskIntelligenceResponse> {
+  const res = await api.get<RiskIntelligenceResponse>(
+    `/projects/${projectId}/risk-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getSecurityIntelligence(
+  projectId: number,
+): Promise<SecurityIntelligenceResponse> {
+  const res = await api.get<SecurityIntelligenceResponse>(
+    `/projects/${projectId}/security-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getPerformanceIntelligence(
+  projectId: number,
+): Promise<PerformanceIntelligenceResponse> {
+  const res = await api.get<PerformanceIntelligenceResponse>(
+    `/projects/${projectId}/performance-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getMaintainabilityIntelligence(
+  projectId: number,
+): Promise<MaintainabilityIntelligenceResponse> {
+  const res = await api.get<MaintainabilityIntelligenceResponse>(
+    `/projects/${projectId}/maintainability-intelligence`,
   );
   return res.data;
 }

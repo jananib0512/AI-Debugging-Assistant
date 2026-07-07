@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { getFunctionClassAnalysis } from "@/lib/project-analyzer";
 import type { ClassDetail, FunctionDetail, FunctionClassResponse } from "@/types/project-analyzer";
+import { RelatedAnalysisNav } from "@/components/project-analyzer/RelatedAnalysisNav";
 
 const sectionClass = "rounded-xl border border-[#E5E7EB] bg-white";
 
@@ -306,6 +307,17 @@ export function FunctionClassAnalysis() {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
 
+      {projectId && (
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate(`/projects/${projectId}/analyzer`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#111827]">
+            ← Back to Overview
+          </button>
+          <span className="text-[#D1D5DB]">|</span>
+          <button onClick={() => navigate(`/projects/${projectId}/analyzer/unified-intelligence`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8]">
+            Back to Unified Dashboard
+          </button>
+        </div>
+      )}
       {/* Hero */}
       <div className="overflow-hidden rounded-xl bg-gradient-to-br from-[#1E40AF] to-[#7C3AED]">
         <div className="px-6 py-8 text-white">
@@ -451,6 +463,8 @@ export function FunctionClassAnalysis() {
           )}
         </div>
       )}
+
+      {projectId && <RelatedAnalysisNav projectId={projectId} currentPage="function-class" />}
 
     </motion.div>
   );

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -1123,4 +1124,765 @@ class CodeQualityResponse(BaseModel):
     top_clean_files: list[CodeQualityTopFile] = []
     language_breakdown: list[CodeQualityLanguageBreakdown] = []
     ai_summary: CodeQualityAiSummary | None = None
+    analyzed_at: datetime
+
+
+class FileIntelligenceHealth(BaseModel):
+    overall: float
+    maintainability: float
+    complexity: float
+    documentation: float
+    security: float
+    readability: float
+
+
+class FileIntelligenceIssue(BaseModel):
+    type: str
+    severity: str
+    description: str
+    reason: str = ""
+    suggested_fix: str = ""
+
+
+class FileIntelligenceDetail(BaseModel):
+    file_name: str
+    path: str
+    extension: str
+    language: str
+    encoding: str = "utf-8"
+    size: int = 0
+    last_modified: str = ""
+    total_lines: int = 0
+    code_lines: int = 0
+    blank_lines: int = 0
+    comment_lines: int = 0
+    functions: int = 0
+    classes: int = 0
+    imports: int = 0
+    complexity: int = 0
+    health: FileIntelligenceHealth
+    classification: str
+    tags: list[str] = []
+    issues: list[FileIntelligenceIssue] = []
+    ai_summary: str = ""
+
+
+class FileIntelligenceStats(BaseModel):
+    total_files: int = 0
+    total_classes: int = 0
+    total_functions: int = 0
+    total_imports: int = 0
+    total_lines: int = 0
+    total_code_lines: int = 0
+    total_blank_lines: int = 0
+    total_comment_lines: int = 0
+    language_counts: dict[str, int] = {}
+    classification_counts: dict[str, int] = {}
+    health_distribution: dict[str, int] = {}
+    average_complexity: float = 0.0
+    average_maintainability: float = 0.0
+    total_issues: int = 0
+    large_files: int = 0
+    empty_files: int = 0
+    duplicate_files: int = 0
+
+
+class FileIntelligenceResponse(BaseModel):
+    files: list[FileIntelligenceDetail]
+    stats: FileIntelligenceStats
+    analyzed_at: datetime
+
+
+class FuncClassIntelligenceParam(BaseModel):
+    name: str
+    type: str | None = None
+    default_value: str | None = None
+    is_optional: bool = False
+
+
+class FuncClassIntelligenceIssue(BaseModel):
+    type: str
+    severity: str
+    description: str
+    reason: str = ""
+    suggested_fix: str = ""
+    line: int | None = None
+
+
+class FuncClassIntelligenceFunc(BaseModel):
+    name: str
+    file_path: str
+    file_name: str
+    language: str
+    module: str = ""
+    parameters: list[FuncClassIntelligenceParam] = []
+    return_type: str | None = None
+    decorators: list[str] = []
+    is_async: bool = False
+    is_generator: bool = False
+    is_lambda: bool = False
+    visibility: str = "public"
+    lines_of_code: int = 0
+    start_line: int = 0
+    end_line: int = 0
+    cyclomatic_complexity: int = 1
+    maintainability_score: float = 100.0
+    has_documentation: bool = False
+    has_type_hints: bool = False
+    deepest_nesting: int = 0
+    issue_count: int = 0
+    health_status: str = "Good"
+    issues: list[FuncClassIntelligenceIssue] = []
+    callers: list[str] = []
+    called_functions: list[str] = []
+    is_recursive: bool = False
+    is_unused: bool = False
+    cross_file_calls: list[str] = []
+    ai_insight: str = ""
+
+
+class FuncClassIntelligenceMethod(BaseModel):
+    name: str
+    parent_class: str = ""
+    parameters: list[FuncClassIntelligenceParam] = []
+    return_type: str | None = None
+    decorators: list[str] = []
+    is_async: bool = False
+    is_static: bool = False
+    is_classmethod: bool = False
+    is_property: bool = False
+    visibility: str = "public"
+    lines_of_code: int = 0
+    start_line: int = 0
+    end_line: int = 0
+    cyclomatic_complexity: int = 1
+    maintainability_score: float = 100.0
+    has_documentation: bool = False
+    has_type_hints: bool = False
+    issue_count: int = 0
+    health_status: str = "Good"
+    issues: list[FuncClassIntelligenceIssue] = []
+    ai_insight: str = ""
+
+
+class FuncClassIntelligenceClass(BaseModel):
+    name: str
+    file_path: str
+    file_name: str
+    language: str
+    module: str = ""
+    base_classes: list[str] = []
+    parent_class: str | None = None
+    child_classes: list[str] = []
+    methods: list[FuncClassIntelligenceMethod] = []
+    properties: list[str] = []
+    class_variables: list[str] = []
+    constructors: list[FuncClassIntelligenceMethod] = []
+    decorators: list[str] = []
+    interfaces: list[str] = []
+    is_abstract: bool = False
+    has_nested_classes: bool = False
+    lines_of_code: int = 0
+    complexity: int = 1
+    maintainability_score: float = 100.0
+    has_documentation: bool = False
+    issue_count: int = 0
+    health_status: str = "Good"
+    issues: list[FuncClassIntelligenceIssue] = []
+    coupling: int = 0
+    method_count: int = 0
+    property_count: int = 0
+    ai_insight: str = ""
+
+
+class FuncClassRelationship(BaseModel):
+    type: str  # "inheritance", "composition", "aggregation", "association", "dependency"
+    source: str
+    target: str
+    source_file: str = ""
+    target_file: str = ""
+    strength: str = "weak"  # "weak", "medium", "strong"
+
+
+class FuncClassIntelligenceStats(BaseModel):
+    total_functions: int = 0
+    total_classes: int = 0
+    total_methods: int = 0
+    average_complexity: float = 0.0
+    average_maintainability: float = 100.0
+    total_issues: int = 0
+    language_breakdown: dict[str, int] = {}
+    health_counts: dict[str, int] = {}
+    unused_functions: int = 0
+    recursive_functions: int = 0
+    undocumented_count: int = 0
+    deep_nesting_count: int = 0
+    missing_type_hints_count: int = 0
+
+
+class FuncClassIntelligenceResponse(BaseModel):
+    functions: list[FuncClassIntelligenceFunc]
+    classes: list[FuncClassIntelligenceClass]
+    relationships: list[FuncClassRelationship]
+    stats: FuncClassIntelligenceStats
+    ai_insights: list[str] = []
+    analyzed_at: datetime
+
+
+class CallGraphNode(BaseModel):
+    id: str
+    name: str
+    type: str  # "function", "method", "class", "entry_point", "route", "controller", "service", "repository", "library"
+    file_path: str = ""
+    module: str = ""
+    language: str = ""
+    line_number: int = 0
+    complexity: int = 0
+    maintainability: float = 100.0
+    call_depth: int = 0
+    is_entry_point: bool = False
+    is_recursive: bool = False
+    is_dead: bool = False
+    is_library: bool = False
+    is_framework: bool = False
+
+
+class CallGraphEdge(BaseModel):
+    source: str
+    target: str
+    call_type: str = "direct"  # "direct", "async", "callback", "event", "import"
+    call_count: int = 1
+    is_cross_file: bool = False
+    is_cross_module: bool = False
+    is_recursive: bool = False
+    is_library: bool = False
+    file_path: str = ""
+    line_number: int = 0
+
+
+class ExecutionFlow(BaseModel):
+    id: str
+    name: str
+    description: str = ""
+    flow_type: str = "request"  # "request", "api", "cli", "background", "main", "framework"
+    entry_node: str = ""
+    exit_node: str = ""
+    path: list[str] = []
+    depth: int = 0
+    is_complete: bool = False
+    issues: list[str] = []
+
+
+class CallGraphIssue(BaseModel):
+    type: str  # "dead_chain", "recursive_loop", "circular_call", "unused_function", "orphan_method", "broken_path"
+    severity: str  # "high", "medium", "low"
+    description: str = ""
+    nodes: list[str] = []
+    detail: str = ""
+
+
+class CallGraphStats(BaseModel):
+    total_nodes: int = 0
+    total_edges: int = 0
+    total_entry_points: int = 0
+    total_execution_flows: int = 0
+    total_issues: int = 0
+    average_call_depth: float = 0.0
+    max_call_depth: int = 0
+    total_unused: int = 0
+    total_recursive: int = 0
+    total_circular: int = 0
+    total_dead_chains: int = 0
+    total_orphans: int = 0
+    total_broken_paths: int = 0
+    language_breakdown: dict[str, int] = {}
+    node_type_counts: dict[str, int] = {}
+
+
+class CallGraphResponse(BaseModel):
+    nodes: list[CallGraphNode]
+    edges: list[CallGraphEdge]
+    execution_flows: list[ExecutionFlow]
+    entry_points: list[CallGraphNode] = []
+    stats: CallGraphStats
+    issues: list[CallGraphIssue] = []
+    ai_insights: list[str] = []
+    analyzed_at: datetime
+
+
+# ── Phase 3B.11: Semantic Code Intelligence ─────────────────────────────────
+
+
+class SemanticComponent(BaseModel):
+    id: str
+    name: str
+    type: str = ""
+    sub_type: str = ""
+    file_path: str = ""
+    module: str = ""
+    language: str = ""
+    line_number: int = 0
+    purpose: str = ""
+    responsibility: str = ""
+    role: str = ""
+    business_context: str = ""
+    summary: str = ""
+    classification_reason: str = ""
+    confidence: float = 0.0
+    complexity: int = 0
+    is_entry_point: bool = False
+    is_exported: bool = False
+    is_test: bool = False
+    is_abstract: bool = False
+    is_deprecated: bool = False
+    has_ai_summary: bool = False
+
+
+class SemanticRelationship(BaseModel):
+    source_id: str
+    target_id: str
+    relationship_type: str = ""
+    description: str = ""
+    strength: float = 1.0
+    is_direct: bool = True
+    file_path: str = ""
+    line_number: int = 0
+
+
+class SemanticSymbol(BaseModel):
+    name: str
+    kind: str = ""
+    file_path: str = ""
+    module: str = ""
+    line_number: int = 0
+    is_definition: bool = False
+    is_exported: bool = False
+    is_imported: bool = False
+    resolved_target: str = ""
+    aliases: list[str] = []
+
+
+class BusinessFlow(BaseModel):
+    id: str
+    name: str
+    description: str = ""
+    flow_type: str = ""
+    confidence: str = "medium"
+    entry_components: list[str] = []
+    exit_components: list[str] = []
+    path: list[str] = []
+    components: list[str] = []
+    verified: bool = False
+
+
+class SemanticCodeIssue(BaseModel):
+    type: str
+    severity: str = "info"
+    component_id: str = ""
+    description: str = ""
+    detail: str = ""
+    suggestion: str = ""
+
+
+class SemanticSimilarity(BaseModel):
+    component_a_id: str
+    component_b_id: str
+    similarity_type: str = ""
+    score: float = 0.0
+    description: str = ""
+    shared_patterns: list[str] = []
+
+
+class SemanticStats(BaseModel):
+    total_components: int = 0
+    total_files: int = 0
+    total_classes: int = 0
+    total_functions: int = 0
+    type_breakdown: dict[str, int] = {}
+    language_breakdown: dict[str, int] = {}
+    total_relationships: int = 0
+    total_business_flows: int = 0
+    total_verified_flows: int = 0
+    total_symbols: int = 0
+    total_issues: int = 0
+    total_similarities: int = 0
+    component_type_counts: dict[str, int] = {}
+
+
+class UnderstandingScore(BaseModel):
+    overall: float = 0.0
+    architecture: float = 0.0
+    business_logic: float = 0.0
+    dependencies: float = 0.0
+    code_organization: float = 0.0
+    execution_flow: float = 0.0
+    semantic_relationships: float = 0.0
+    maintainability: float = 0.0
+    readability: float = 0.0
+    has_entry_points: bool = False
+    has_controllers: bool = False
+    has_services: bool = False
+    has_repositories: bool = False
+    has_ml_components: bool = False
+    has_forecast_components: bool = False
+    component_coverage: float = 0.0
+    flow_capture_rate: float = 0.0
+    insight_count: int = 0
+
+
+class KnowledgeGraphNode(BaseModel):
+    id: str
+    label: str
+    type: str = ""
+    sub_type: str = ""
+    file_path: str = ""
+    module: str = ""
+    importance: float = 1.0
+    group: str = ""
+    details: dict[str, Any] = {}
+
+
+class KnowledgeGraphEdge(BaseModel):
+    source: str
+    target: str
+    relationship: str = ""
+    weight: float = 1.0
+    description: str = ""
+
+
+class KnowledgeGraph(BaseModel):
+    nodes: list[KnowledgeGraphNode] = []
+    edges: list[KnowledgeGraphEdge] = []
+
+
+class BusinessComponent(BaseModel):
+    id: str
+    name: str
+    type: str = ""
+    file_path: str = ""
+    module: str = ""
+    confidence: float = 0.0
+    description: str = ""
+    related_components: list[str] = []
+
+
+class SemanticResponse(BaseModel):
+    components: list[SemanticComponent]
+    relationships: list[SemanticRelationship]
+    symbols: list[SemanticSymbol]
+    business_flows: list[BusinessFlow]
+    issues: list[SemanticCodeIssue]
+    similarities: list[SemanticSimilarity]
+    stats: SemanticStats
+    understanding_score: UnderstandingScore = None
+    knowledge_graph: KnowledgeGraph = None
+    business_components: list[BusinessComponent] = []
+    ai_insights: list[str] = []
+    analyzed_at: datetime
+
+
+# ── Phase 3B.12: Unified AI Analyzer Dashboard ────────────────────────────────
+
+
+class UnifiedHealthMetrics(BaseModel):
+    overall_health: float = 0.0
+    overall_quality: float = 0.0
+    architecture_health: float = 0.0
+    dependency_health: float = 0.0
+    security_health: float = 0.0
+    performance_health: float = 0.0
+    maintainability: float = 0.0
+    readiness: float = 0.0
+    technical_debt: float = 0.0
+    ai_confidence: float = 0.0
+
+
+class UnifiedProjectScore(BaseModel):
+    overall_score: float = 0.0
+    architecture_score: float = 0.0
+    code_quality_score: float = 0.0
+    dependency_score: float = 0.0
+    security_score: float = 0.0
+    file_quality_score: float = 0.0
+    function_quality_score: float = 0.0
+    configuration_score: float = 0.0
+    semantic_score: float = 0.0
+
+
+class GlobalInsight(BaseModel):
+    type: str
+    label: str
+    value: str
+    severity: str = "info"
+    source: str = ""
+    detail: str = ""
+
+
+class ExecutiveSummary(BaseModel):
+    project_summary: str = ""
+    architecture_summary: str = ""
+    business_logic_summary: str = ""
+    risk_summary: str = ""
+    security_summary: str = ""
+    recommendation_summary: str = ""
+    future_improvements: list[str] = []
+
+
+class KnowledgeHubItem(BaseModel):
+    category: str
+    label: str
+    value: str
+    link: str = ""
+    count: int = 0
+
+
+class HealthMapModule(BaseModel):
+    name: str
+    path: str = ""
+    status: str = "healthy"
+    issues: int = 0
+    score: float = 0.0
+
+
+class ProjectTimelineStage(BaseModel):
+    stage: str
+    label: str
+    status: str = "pending"
+    details: str = ""
+    score: float = 0.0
+
+
+class GlobalSearchResult(BaseModel):
+    category: str
+    items: list[dict] = []
+    total: int = 0
+
+
+class UnifiedIntelligenceResponse(BaseModel):
+    health: UnifiedHealthMetrics
+    scores: UnifiedProjectScore
+    insights: list[GlobalInsight] = []
+    executive_summary: ExecutiveSummary
+    knowledge_hub: list[KnowledgeHubItem] = []
+    health_map: list[HealthMapModule] = []
+    timeline: list[ProjectTimelineStage] = []
+    search_results: dict[str, GlobalSearchResult] = {}
+    analyzed_at: datetime
+
+
+# ── Phase 3C.1: Project Risk Intelligence ─────────────────────────────────────
+
+
+class RiskScore(BaseModel):
+    overall_risk: float = 0.0
+    risk_level: str = "unknown"
+    confidence_score: float = 0.0
+    project_stability: float = 0.0
+    maintainability_risk: float = 0.0
+    architecture_risk: float = 0.0
+    dependency_risk: float = 0.0
+    security_risk: float = 0.0
+    performance_risk: float = 0.0
+
+
+class RiskImpact(BaseModel):
+    business_impact: str = ""
+    technical_impact: str = ""
+    recommended_priority: str = "medium"
+
+
+class RiskItem(BaseModel):
+    name: str
+    type: str
+    severity: str = "medium"
+    affected_files: list[str] = []
+    affected_classes: list[str] = []
+    affected_functions: list[str] = []
+    impact: RiskImpact = RiskImpact()
+    detail: str = ""
+    recommendation: str = ""
+
+
+class RiskHeatmapItem(BaseModel):
+    name: str
+    path: str = ""
+    category: str = "file"
+    risk_score: float = 0.0
+    risk_level: str = "low"
+    top_risks: list[str] = []
+
+
+class RiskSummary(BaseModel):
+    highest_risk_module: str = ""
+    highest_risk_area: str = ""
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    summary_text: str = ""
+    prioritized_recommendations: list[str] = []
+
+
+class RiskIntelligenceResponse(BaseModel):
+    risk_score: RiskScore
+    risks: list[RiskItem] = []
+    heatmap: list[RiskHeatmapItem] = []
+    summary: RiskSummary = RiskSummary()
+    search_results: dict[str, list[dict]] = {}
+    analyzed_at: datetime
+
+
+# ── Phase 3C.2: Security Intelligence ──────────────────────────────────────────
+
+
+class SecurityScore(BaseModel):
+    overall_security_score: float = 0.0
+    security_health: float = 0.0
+    security_confidence: float = 0.0
+    security_readiness: float = 0.0
+    risk_level: str = "unknown"
+
+
+class SecurityFinding(BaseModel):
+    name: str
+    type: str
+    severity: str = "medium"
+    affected_files: list[str] = []
+    affected_functions: list[str] = []
+    detail: str = ""
+    business_impact: str = ""
+    technical_impact: str = ""
+    recommended_fix: str = ""
+
+
+class DependencySecurity(BaseModel):
+    name: str
+    severity: str = "medium"
+    detail: str = ""
+    recommendation: str = ""
+
+
+class SecuritySummary(BaseModel):
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    summary_text: str = ""
+    prioritized_recommendations: list[str] = []
+
+
+class SecurityIntelligenceResponse(BaseModel):
+    security_score: SecurityScore
+    findings: list[SecurityFinding] = []
+    dependency_issues: list[DependencySecurity] = []
+    summary: SecuritySummary = SecuritySummary()
+    analyzed_at: datetime
+
+
+# ── Phase 3C.3: Performance Intelligence ───────────────────────────────────────
+
+
+class PerformanceScore(BaseModel):
+    overall_performance_score: float = 0.0
+    performance_health: float = 0.0
+    performance_readiness: float = 0.0
+    optimization_potential: float = 0.0
+    ai_confidence: float = 0.0
+    risk_level: str = "unknown"
+
+
+class PerformanceFinding(BaseModel):
+    name: str
+    type: str
+    severity: str = "medium"
+    estimated_cost: str = ""
+    affected_files: list[str] = []
+    affected_functions: list[str] = []
+    detail: str = ""
+    optimization_suggestion: str = ""
+    estimated_gain: str = ""
+    complexity_reduction: str = ""
+
+
+class PerformanceSummary(BaseModel):
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    summary_text: str = ""
+    prioritized_recommendations: list[str] = []
+
+
+class PerformanceIntelligenceResponse(BaseModel):
+    performance_score: PerformanceScore
+    findings: list[PerformanceFinding] = []
+    summary: PerformanceSummary = PerformanceSummary()
+    analyzed_at: datetime
+
+
+# ── Phase 3C.4: Maintainability Intelligence ──────────────────────────────────
+
+
+class MaintainabilityScore(BaseModel):
+    overall_maintainability_score: float = 0.0
+    maintainability_health: float = 0.0
+    technical_debt_score: float = 0.0
+    refactoring_readiness: float = 0.0
+    long_term_stability: float = 0.0
+    readability: float = 0.0
+    modularity: float = 0.0
+    code_organization: float = 0.0
+    ai_confidence: float = 0.0
+    risk_level: str = "unknown"
+
+
+class CodeSmellItem(BaseModel):
+    name: str
+    type: str
+    severity: str = "medium"
+    affected_files: list[str] = []
+    affected_functions: list[str] = []
+    affected_classes: list[str] = []
+    description: str = ""
+    refactoring_effort: str = ""
+    ai_suggestion: str = ""
+
+
+class TechnicalDebtEstimate(BaseModel):
+    total_debt_hours: float = 0.0
+    debt_level: str = "low"
+    estimated_refactoring_effort: str = ""
+    maintenance_cost: str = ""
+    critical_file_count: int = 0
+    high_file_count: int = 0
+    medium_file_count: int = 0
+    low_file_count: int = 0
+
+
+class ModuleHealthScore(BaseModel):
+    file_name: str = ""
+    score: float = 0.0
+    issues: list[str] = []
+    complexity: float = 0.0
+    cohesion: float = 0.0
+    coupling: float = 0.0
+    debt_estimate: str = ""
+
+
+class MaintainabilitySummary(BaseModel):
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    informational_count: int = 0
+    summary_text: str = ""
+    prioritized_recommendations: list[str] = []
+
+
+class MaintainabilityIntelligenceResponse(BaseModel):
+    maintainability_score: MaintainabilityScore
+    code_smells: list[CodeSmellItem] = []
+    technical_debt: TechnicalDebtEstimate = TechnicalDebtEstimate()
+    module_health: list[ModuleHealthScore] = []
+    summary: MaintainabilitySummary = MaintainabilitySummary()
     analyzed_at: datetime

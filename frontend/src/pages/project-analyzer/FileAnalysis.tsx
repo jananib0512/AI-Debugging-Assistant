@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { getFileAnalysis } from "@/lib/project-analyzer";
 import type { FileAnalysisDetail } from "@/types/project-analyzer";
+import { RelatedAnalysisNav } from "@/components/project-analyzer/RelatedAnalysisNav";
 
 type SortKey = "score" | "complexity" | "issues" | "maintainability" | "loc" | "name";
 
@@ -155,6 +156,17 @@ export function FileAnalysis() {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
 
+      {projectId && (
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate(`/projects/${projectId}/analyzer`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#111827]">
+            ← Back to Overview
+          </button>
+          <span className="text-[#D1D5DB]">|</span>
+          <button onClick={() => navigate(`/projects/${projectId}/analyzer/unified-intelligence`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8]">
+            Back to Unified Dashboard
+          </button>
+        </div>
+      )}
       {/* Hero */}
       <motion.div variants={itemVariants} className="rounded-xl border border-[#E5E7EB] bg-gradient-to-br from-[#059669] to-[#047857] p-6 text-white">
         <div className="flex items-center justify-between">
@@ -336,6 +348,8 @@ export function FileAnalysis() {
           )}
         </div>
       </motion.div>
+
+      {projectId && <RelatedAnalysisNav projectId={projectId} currentPage="file-analysis" />}
 
     </motion.div>
   );

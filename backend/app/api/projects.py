@@ -12,20 +12,36 @@ from app.schemas.project_analyzer import (
     AnalyzerResponse,
     AnalyzerValidationResponse,
     ArchitectureDetectionResponse,
+    CallGraphResponse,
     CodeQualityResponse,
     SourceCodeIntelligenceResponse,
     ComplexityAnalysisResponse,
     ConfigurationIntelligenceResponse,
     EntryPointDetectionResponse,
     FileAnalysisResponse,
+    FileIntelligenceResponse,
     FrameworkIntelligenceResponse,
+    FuncClassIntelligenceResponse,
     FunctionClassResponse,
     ImportDependencyResponse,
     ModuleDetectionResponse,
     ProjectInsightsResponse,
     ProjectIntelligenceResponse,
+    RiskIntelligenceResponse,
+    SecurityIntelligenceResponse,
+    PerformanceIntelligenceResponse,
+    MaintainabilityIntelligenceResponse,
+    SemanticResponse,
+    UnifiedIntelligenceResponse,
 )
 from app.services.architecture_detection_service import ArchitectureDetectionService
+from app.services.call_graph_intelligence_service import CallGraphIntelligenceService
+from app.services.semantic_intelligence_service import SemanticIntelligenceService
+from app.services.unified_intelligence_service import UnifiedIntelligenceService
+from app.services.risk_intelligence_service import RiskIntelligenceService
+from app.services.security_intelligence_service import SecurityIntelligenceService
+from app.services.performance_intelligence_service import PerformanceIntelligenceService
+from app.services.maintainability_intelligence_service import MaintainabilityIntelligenceService
 from app.services.complexity_analysis_service import ComplexityAnalysisService
 from app.services.configuration_intelligence_service import ConfigurationIntelligenceService
 from app.services.entry_point_detection_service import EntryPointDetectionService
@@ -36,7 +52,9 @@ from app.services.project_intelligence_service import ProjectIntelligenceService
 from app.services.project_validation_service import ProjectValidationService
 from app.services.code_quality_service import CodeQualityService
 from app.services.file_analysis_service import FileAnalysisService
+from app.services.file_intelligence_service import FileIntelligenceService
 from app.services.function_class_service import FunctionClassService
+from app.services.function_class_intelligence_service import FunctionClassIntelligenceService
 from app.services.import_dependency_service import ImportDependencyService
 from app.services.source_code_intelligence_service import SourceCodeIntelligenceService
 from app.services.extraction_service import ExtractionService
@@ -330,6 +348,105 @@ def get_import_dependency_analysis(
     project_id: int,
     current_user: User = Depends(require_auth),
     service: ImportDependencyService = Depends(ImportDependencyService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/file-intelligence", response_model=FileIntelligenceResponse)
+def get_file_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: FileIntelligenceService = Depends(FileIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/function-class-intelligence", response_model=FuncClassIntelligenceResponse)
+def get_function_class_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: FunctionClassIntelligenceService = Depends(FunctionClassIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/call-graph", response_model=CallGraphResponse)
+def get_call_graph(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: CallGraphIntelligenceService = Depends(CallGraphIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/semantic-intelligence", response_model=SemanticResponse)
+def get_semantic_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: SemanticIntelligenceService = Depends(SemanticIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/unified-intelligence", response_model=UnifiedIntelligenceResponse)
+def get_unified_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: UnifiedIntelligenceService = Depends(UnifiedIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/risk-intelligence", response_model=RiskIntelligenceResponse)
+def get_risk_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: RiskIntelligenceService = Depends(RiskIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/security-intelligence", response_model=SecurityIntelligenceResponse)
+def get_security_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: SecurityIntelligenceService = Depends(SecurityIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/performance-intelligence", response_model=PerformanceIntelligenceResponse)
+def get_performance_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: PerformanceIntelligenceService = Depends(PerformanceIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/maintainability-intelligence", response_model=MaintainabilityIntelligenceResponse)
+def get_maintainability_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: MaintainabilityIntelligenceService = Depends(MaintainabilityIntelligenceService),
 ):
     return service.analyze(
         user_id=current_user.id, project_id=project_id

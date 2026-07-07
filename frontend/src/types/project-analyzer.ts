@@ -982,6 +982,72 @@ export interface DependencyMetrics {
   dependency_type_counts: Record<string, number>;
 }
 
+export interface FileIntelligenceHealth {
+  overall: number;
+  maintainability: number;
+  complexity: number;
+  documentation: number;
+  security: number;
+  readability: number;
+}
+
+export interface FileIntelligenceIssue {
+  type: string;
+  severity: string;
+  description: string;
+  reason: string;
+  suggested_fix: string;
+}
+
+export interface FileIntelligenceDetail {
+  file_name: string;
+  path: string;
+  extension: string;
+  language: string;
+  encoding: string;
+  size: number;
+  last_modified: string;
+  total_lines: number;
+  code_lines: number;
+  blank_lines: number;
+  comment_lines: number;
+  functions: number;
+  classes: number;
+  imports: number;
+  complexity: number;
+  health: FileIntelligenceHealth;
+  classification: string;
+  tags: string[];
+  issues: FileIntelligenceIssue[];
+  ai_summary: string;
+}
+
+export interface FileIntelligenceStats {
+  total_files: number;
+  total_classes: number;
+  total_functions: number;
+  total_imports: number;
+  total_lines: number;
+  total_code_lines: number;
+  total_blank_lines: number;
+  total_comment_lines: number;
+  language_counts: Record<string, number>;
+  classification_counts: Record<string, number>;
+  health_distribution: Record<string, number>;
+  average_complexity: number;
+  average_maintainability: number;
+  total_issues: number;
+  large_files: number;
+  empty_files: number;
+  duplicate_files: number;
+}
+
+export interface FileIntelligenceResponse {
+  files: FileIntelligenceDetail[];
+  stats: FileIntelligenceStats;
+  analyzed_at: string;
+}
+
 export interface ImportDependencyResponse {
   imports: ImportRecord[];
   dependencies: FileDependency[];
@@ -990,5 +1056,684 @@ export interface ImportDependencyResponse {
   metrics: DependencyMetrics;
   insights: string[];
   recommendations: string[];
+  analyzed_at: string;
+}
+
+export interface FuncClassIntelligenceParam {
+  name: string;
+  type: string | null;
+  default_value: string | null;
+  is_optional: boolean;
+}
+
+export interface FuncClassIntelligenceIssue {
+  type: string;
+  severity: string;
+  description: string;
+  reason: string;
+  suggested_fix: string;
+  line: number | null;
+}
+
+export interface FuncClassIntelligenceFunc {
+  name: string;
+  file_path: string;
+  file_name: string;
+  language: string;
+  module: string;
+  parameters: FuncClassIntelligenceParam[];
+  return_type: string | null;
+  decorators: string[];
+  is_async: boolean;
+  is_generator: boolean;
+  is_lambda: boolean;
+  visibility: string;
+  lines_of_code: number;
+  start_line: number;
+  end_line: number;
+  cyclomatic_complexity: number;
+  maintainability_score: number;
+  has_documentation: boolean;
+  has_type_hints: boolean;
+  deepest_nesting: number;
+  issue_count: number;
+  health_status: string;
+  issues: FuncClassIntelligenceIssue[];
+  callers: string[];
+  called_functions: string[];
+  is_recursive: boolean;
+  is_unused: boolean;
+  cross_file_calls: string[];
+  ai_insight: string;
+}
+
+export interface FuncClassIntelligenceMethod {
+  name: string;
+  parent_class: string;
+  parameters: FuncClassIntelligenceParam[];
+  return_type: string | null;
+  decorators: string[];
+  is_async: boolean;
+  is_static: boolean;
+  is_classmethod: boolean;
+  is_property: boolean;
+  visibility: string;
+  lines_of_code: number;
+  start_line: number;
+  end_line: number;
+  cyclomatic_complexity: number;
+  maintainability_score: number;
+  has_documentation: boolean;
+  has_type_hints: boolean;
+  issue_count: number;
+  health_status: string;
+  issues: FuncClassIntelligenceIssue[];
+  ai_insight: string;
+}
+
+export interface FuncClassIntelligenceClass {
+  name: string;
+  file_path: string;
+  file_name: string;
+  language: string;
+  module: string;
+  base_classes: string[];
+  parent_class: string | null;
+  child_classes: string[];
+  methods: FuncClassIntelligenceMethod[];
+  properties: string[];
+  class_variables: string[];
+  constructors: FuncClassIntelligenceMethod[];
+  decorators: string[];
+  interfaces: string[];
+  is_abstract: boolean;
+  has_nested_classes: boolean;
+  lines_of_code: number;
+  complexity: number;
+  maintainability_score: number;
+  has_documentation: boolean;
+  issue_count: number;
+  health_status: string;
+  issues: FuncClassIntelligenceIssue[];
+  coupling: number;
+  method_count: number;
+  property_count: number;
+  ai_insight: string;
+}
+
+export interface FuncClassRelationship {
+  type: string;
+  source: string;
+  target: string;
+  source_file: string;
+  target_file: string;
+  strength: string;
+}
+
+export interface FuncClassIntelligenceStats {
+  total_functions: number;
+  total_classes: number;
+  total_methods: number;
+  average_complexity: number;
+  average_maintainability: number;
+  total_issues: number;
+  language_breakdown: Record<string, number>;
+  health_counts: Record<string, number>;
+  unused_functions: number;
+  recursive_functions: number;
+  undocumented_count: number;
+  deep_nesting_count: number;
+  missing_type_hints_count: number;
+}
+
+export interface FuncClassIntelligenceResponse {
+  functions: FuncClassIntelligenceFunc[];
+  classes: FuncClassIntelligenceClass[];
+  relationships: FuncClassRelationship[];
+  stats: FuncClassIntelligenceStats;
+  ai_insights: string[];
+  analyzed_at: string;
+}
+
+export interface CallGraphNode {
+  id: string;
+  name: string;
+  type: string;
+  file_path: string;
+  module: string;
+  language: string;
+  line_number: number;
+  complexity: number;
+  maintainability: number;
+  call_depth: number;
+  is_entry_point: boolean;
+  is_recursive: boolean;
+  is_dead: boolean;
+  is_library: boolean;
+  is_framework: boolean;
+}
+
+export interface CallGraphEdge {
+  source: string;
+  target: string;
+  call_type: string;
+  call_count: number;
+  is_cross_file: boolean;
+  is_cross_module: boolean;
+  is_recursive: boolean;
+  is_library: boolean;
+  file_path: string;
+  line_number: number;
+}
+
+export interface ExecutionFlow {
+  id: string;
+  name: string;
+  description: string;
+  flow_type: string;
+  entry_node: string;
+  exit_node: string;
+  path: string[];
+  depth: number;
+  is_complete: boolean;
+  issues: string[];
+}
+
+export interface CallGraphIssue {
+  type: string;
+  severity: string;
+  description: string;
+  nodes: string[];
+  detail: string;
+}
+
+export interface CallGraphStats {
+  total_nodes: number;
+  total_edges: number;
+  total_entry_points: number;
+  total_execution_flows: number;
+  total_issues: number;
+  average_call_depth: number;
+  max_call_depth: number;
+  total_unused: number;
+  total_recursive: number;
+  total_circular: number;
+  total_dead_chains: number;
+  total_orphans: number;
+  total_broken_paths: number;
+  language_breakdown: Record<string, number>;
+  node_type_counts: Record<string, number>;
+}
+
+export interface CallGraphResponse {
+  nodes: CallGraphNode[];
+  edges: CallGraphEdge[];
+  execution_flows: ExecutionFlow[];
+  entry_points: CallGraphNode[];
+  stats: CallGraphStats;
+  issues: CallGraphIssue[];
+  ai_insights: string[];
+  analyzed_at: string;
+}
+
+export interface SemanticComponent {
+  id: string;
+  name: string;
+  type: string;
+  sub_type: string;
+  file_path: string;
+  module: string;
+  language: string;
+  line_number: number;
+  purpose: string;
+  responsibility: string;
+  role: string;
+  business_context: string;
+  summary: string;
+  classification_reason: string;
+  confidence: number;
+  complexity: number;
+  is_entry_point: boolean;
+  is_exported: boolean;
+  is_test: boolean;
+  is_abstract: boolean;
+  is_deprecated: boolean;
+  has_ai_summary: boolean;
+}
+
+export interface SemanticRelationship {
+  source_id: string;
+  target_id: string;
+  relationship_type: string;
+  description: string;
+  strength: number;
+  is_direct: boolean;
+  file_path: string;
+  line_number: number;
+}
+
+export interface SemanticSymbol {
+  name: string;
+  kind: string;
+  file_path: string;
+  module: string;
+  line_number: number;
+  is_definition: boolean;
+  is_exported: boolean;
+  is_imported: boolean;
+  resolved_target: string;
+  aliases: string[];
+}
+
+export interface BusinessFlow {
+  id: string;
+  name: string;
+  description: string;
+  flow_type: string;
+  confidence: string;
+  entry_components: string[];
+  exit_components: string[];
+  path: string[];
+  components: string[];
+  verified: boolean;
+}
+
+export interface SemanticCodeIssue {
+  type: string;
+  severity: string;
+  component_id: string;
+  description: string;
+  detail: string;
+  suggestion: string;
+}
+
+export interface SemanticSimilarity {
+  component_a_id: string;
+  component_b_id: string;
+  similarity_type: string;
+  score: number;
+  description: string;
+  shared_patterns: string[];
+}
+
+export interface SemanticStats {
+  total_components: number;
+  total_files: number;
+  total_classes: number;
+  total_functions: number;
+  type_breakdown: Record<string, number>;
+  language_breakdown: Record<string, number>;
+  total_relationships: number;
+  total_business_flows: number;
+  total_verified_flows: number;
+  total_symbols: number;
+  total_issues: number;
+  total_similarities: number;
+  component_type_counts: Record<string, number>;
+}
+
+export interface UnderstandingScore {
+  overall: number;
+  architecture: number;
+  business_logic: number;
+  dependencies: number;
+  code_organization: number;
+  execution_flow: number;
+  semantic_relationships: number;
+  maintainability: number;
+  readability: number;
+  has_entry_points: boolean;
+  has_controllers: boolean;
+  has_services: boolean;
+  has_repositories: boolean;
+  has_ml_components: boolean;
+  has_forecast_components: boolean;
+  component_coverage: number;
+  flow_capture_rate: number;
+  insight_count: number;
+}
+
+export interface KnowledgeGraphNode {
+  id: string;
+  label: string;
+  type: string;
+  sub_type: string;
+  file_path: string;
+  module: string;
+  importance: number;
+  group: string;
+  details: Record<string, unknown>;
+}
+
+export interface KnowledgeGraphEdge {
+  source: string;
+  target: string;
+  relationship: string;
+  weight: number;
+  description: string;
+}
+
+export interface KnowledgeGraph {
+  nodes: KnowledgeGraphNode[];
+  edges: KnowledgeGraphEdge[];
+}
+
+export interface BusinessComponent {
+  id: string;
+  name: string;
+  type: string;
+  file_path: string;
+  module: string;
+  confidence: number;
+  description: string;
+  related_components: string[];
+}
+
+export interface SemanticResponse {
+  components: SemanticComponent[];
+  relationships: SemanticRelationship[];
+  symbols: SemanticSymbol[];
+  business_flows: BusinessFlow[];
+  issues: SemanticCodeIssue[];
+  similarities: SemanticSimilarity[];
+  stats: SemanticStats;
+  understanding_score: UnderstandingScore | null;
+  knowledge_graph: KnowledgeGraph | null;
+  business_components: BusinessComponent[];
+  ai_insights: string[];
+  analyzed_at: string;
+}
+
+export interface UnifiedHealthMetrics {
+  overall_health: number;
+  overall_quality: number;
+  architecture_health: number;
+  dependency_health: number;
+  security_health: number;
+  performance_health: number;
+  maintainability: number;
+  readiness: number;
+  technical_debt: number;
+  ai_confidence: number;
+}
+
+export interface UnifiedProjectScore {
+  overall_score: number;
+  architecture_score: number;
+  code_quality_score: number;
+  dependency_score: number;
+  security_score: number;
+  file_quality_score: number;
+  function_quality_score: number;
+  configuration_score: number;
+  semantic_score: number;
+}
+
+export interface GlobalInsight {
+  type: string;
+  label: string;
+  value: string;
+  severity: string;
+  source: string;
+  detail: string;
+}
+
+export interface ExecutiveSummary {
+  project_summary: string;
+  architecture_summary: string;
+  business_logic_summary: string;
+  risk_summary: string;
+  security_summary: string;
+  recommendation_summary: string;
+  future_improvements: string[];
+}
+
+export interface KnowledgeHubItem {
+  category: string;
+  label: string;
+  value: string;
+  link: string;
+  count: number;
+}
+
+export interface HealthMapModule {
+  name: string;
+  path: string;
+  status: string;
+  issues: number;
+  score: number;
+}
+
+export interface ProjectTimelineStage {
+  stage: string;
+  label: string;
+  status: string;
+  details: string;
+  score: number;
+}
+
+export interface GlobalSearchResult {
+  category: string;
+  items: Record<string, unknown>[];
+  total: number;
+}
+
+export interface UnifiedIntelligenceResponse {
+  health: UnifiedHealthMetrics;
+  scores: UnifiedProjectScore;
+  insights: GlobalInsight[];
+  executive_summary: ExecutiveSummary;
+  knowledge_hub: KnowledgeHubItem[];
+  health_map: HealthMapModule[];
+  timeline: ProjectTimelineStage[];
+  search_results: Record<string, GlobalSearchResult>;
+  analyzed_at: string;
+}
+
+export interface RiskScore {
+  overall_risk: number;
+  risk_level: string;
+  confidence_score: number;
+  project_stability: number;
+  maintainability_risk: number;
+  architecture_risk: number;
+  dependency_risk: number;
+  security_risk: number;
+  performance_risk: number;
+}
+
+export interface RiskImpact {
+  business_impact: string;
+  technical_impact: string;
+  recommended_priority: string;
+}
+
+export interface RiskItem {
+  name: string;
+  type: string;
+  severity: string;
+  affected_files: string[];
+  affected_classes: string[];
+  affected_functions: string[];
+  impact: RiskImpact;
+  detail: string;
+  recommendation: string;
+}
+
+export interface RiskHeatmapItem {
+  name: string;
+  path: string;
+  category: string;
+  risk_score: number;
+  risk_level: string;
+  top_risks: string[];
+}
+
+export interface RiskSummary {
+  highest_risk_module: string;
+  highest_risk_area: string;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  summary_text: string;
+  prioritized_recommendations: string[];
+}
+
+export interface RiskIntelligenceResponse {
+  risk_score: RiskScore;
+  risks: RiskItem[];
+  heatmap: RiskHeatmapItem[];
+  summary: RiskSummary;
+  search_results: Record<string, unknown[]>;
+  analyzed_at: string;
+}
+
+export interface SecurityScore {
+  overall_security_score: number;
+  security_health: number;
+  security_confidence: number;
+  security_readiness: number;
+  risk_level: string;
+}
+
+export interface SecurityFinding {
+  name: string;
+  type: string;
+  severity: string;
+  affected_files: string[];
+  affected_functions: string[];
+  detail: string;
+  business_impact: string;
+  technical_impact: string;
+  recommended_fix: string;
+}
+
+export interface DependencySecurity {
+  name: string;
+  severity: string;
+  detail: string;
+  recommendation: string;
+}
+
+export interface SecuritySummary {
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  summary_text: string;
+  prioritized_recommendations: string[];
+}
+
+export interface SecurityIntelligenceResponse {
+  security_score: SecurityScore;
+  findings: SecurityFinding[];
+  dependency_issues: DependencySecurity[];
+  summary: SecuritySummary;
+  analyzed_at: string;
+}
+
+
+export interface PerformanceScore {
+  overall_performance_score: number;
+  performance_health: number;
+  performance_readiness: number;
+  optimization_potential: number;
+  ai_confidence: number;
+  risk_level: string;
+}
+
+export interface PerformanceFinding {
+  name: string;
+  type: string;
+  severity: string;
+  estimated_cost: string;
+  affected_files: string[];
+  affected_functions: string[];
+  detail: string;
+  optimization_suggestion: string;
+  estimated_gain: string;
+  complexity_reduction: string;
+}
+
+export interface PerformanceSummary {
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  summary_text: string;
+  prioritized_recommendations: string[];
+}
+
+export interface PerformanceIntelligenceResponse {
+  performance_score: PerformanceScore;
+  findings: PerformanceFinding[];
+  summary: PerformanceSummary;
+  analyzed_at: string;
+}
+
+
+export interface MaintainabilityScore {
+  overall_maintainability_score: number;
+  maintainability_health: number;
+  technical_debt_score: number;
+  refactoring_readiness: number;
+  long_term_stability: number;
+  readability: number;
+  modularity: number;
+  code_organization: number;
+  ai_confidence: number;
+  risk_level: string;
+}
+
+export interface CodeSmellItem {
+  name: string;
+  type: string;
+  severity: string;
+  affected_files: string[];
+  affected_functions: string[];
+  affected_classes: string[];
+  description: string;
+  refactoring_effort: string;
+  ai_suggestion: string;
+}
+
+export interface TechnicalDebtEstimate {
+  total_debt_hours: number;
+  debt_level: string;
+  estimated_refactoring_effort: string;
+  maintenance_cost: string;
+  critical_file_count: number;
+  high_file_count: number;
+  medium_file_count: number;
+  low_file_count: number;
+}
+
+export interface ModuleHealthScore {
+  file_name: string;
+  score: number;
+  issues: string[];
+  complexity: number;
+  cohesion: number;
+  coupling: number;
+  debt_estimate: string;
+}
+
+export interface MaintainabilitySummary {
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  informational_count: number;
+  summary_text: string;
+  prioritized_recommendations: string[];
+}
+
+export interface MaintainabilityIntelligenceResponse {
+  maintainability_score: MaintainabilityScore;
+  code_smells: CodeSmellItem[];
+  technical_debt: TechnicalDebtEstimate;
+  module_health: ModuleHealthScore[];
+  summary: MaintainabilitySummary;
   analyzed_at: string;
 }

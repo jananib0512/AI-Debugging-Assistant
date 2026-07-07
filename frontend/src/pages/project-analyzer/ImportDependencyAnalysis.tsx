@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getImportDependencyAnalysis } from "@/lib/project-analyzer";
 import type { ImportDependencyResponse, ImportRecord, FileDependency } from "@/types/project-analyzer";
+import { RelatedAnalysisNav } from "@/components/project-analyzer/RelatedAnalysisNav";
 
 const sectionClass = "rounded-xl border border-[#E5E7EB] bg-white";
 
@@ -32,6 +33,7 @@ type TabType = "imports" | "dependencies" | "circular" | "graph" | "insights";
 
 export function ImportDependencyAnalysis() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const [data, setData] = useState<ImportDependencyResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -343,6 +345,17 @@ export function ImportDependencyAnalysis() {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
 
+      {projectId && (
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate(`/projects/${projectId}/analyzer`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#111827]">
+            ← Back to Overview
+          </button>
+          <span className="text-[#D1D5DB]">|</span>
+          <button onClick={() => navigate(`/projects/${projectId}/analyzer/unified-intelligence`)} className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8]">
+            Back to Unified Dashboard
+          </button>
+        </div>
+      )}
       {/* Hero */}
       <div className="overflow-hidden rounded-xl bg-gradient-to-br from-[#059669] to-[#2563EB]">
         <div className="px-6 py-8 text-white">
@@ -560,6 +573,8 @@ export function ImportDependencyAnalysis() {
           </div>
         </div>
       )}
+
+      {projectId && <RelatedAnalysisNav projectId={projectId} currentPage="import-dependency" />}
 
     </motion.div>
   );

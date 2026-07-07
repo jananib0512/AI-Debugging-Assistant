@@ -3,18 +3,25 @@ import {
   Award,
   BarChart3,
   Box,
+  Brain,
   Building2,
   ChevronLeft,
   Cpu,
   FileCode,
+  FileSearch,
   FolderKanban,
   FunctionSquare,
   GitBranch,
   GitMerge,
   Package,
+  Radar,
   Server,
   Settings,
+  Share2,
   Shield,
+  ShieldAlert,
+  Wrench,
+  Zap,
 } from "lucide-react";
 import { AnalysisProvider } from "@/contexts/AnalysisContext";
 
@@ -32,8 +39,17 @@ const navItems = [
   { path: "code-quality", label: "Code Quality", icon: Award },
   { path: "recommendations", label: "Recommendations", icon: Shield },
   { path: "file-analysis", label: "File Analysis", icon: FileCode },
+  { path: "file-intelligence", label: "File Intelligence", icon: FileSearch },
   { path: "function-class", label: "Function & Class", icon: FunctionSquare },
+  { path: "function-class-intelligence", label: "Func/Class Intelligence", icon: Brain },
+  { path: "call-graph", label: "Call Graph", icon: Share2 },
   { path: "import-dependency", label: "Dependencies", icon: GitMerge },
+  { path: "semantic-intelligence", label: "Semantic Intel", icon: Brain },
+  { path: "unified-intelligence", label: "Unified Dashboard", icon: Radar },
+  { path: "risk-intelligence", label: "Risk Intelligence", icon: ShieldAlert },
+  { path: "security-intelligence", label: "Security Intel", icon: Shield },
+  { path: "performance-intelligence", label: "Performance Intel", icon: Zap },
+  { path: "maintainability-intelligence", label: "Maintainability Intel", icon: Wrench },
 ];
 
 function Sidebar() {
