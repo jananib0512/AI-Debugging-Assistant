@@ -8,7 +8,9 @@ import {
   Cpu,
   FileCode,
   FolderKanban,
+  FunctionSquare,
   GitBranch,
+  GitMerge,
   Package,
   Server,
   Settings,
@@ -29,6 +31,9 @@ const navItems = [
   { path: "code-intelligence", label: "Code Intelligence", icon: FileCode },
   { path: "code-quality", label: "Code Quality", icon: Award },
   { path: "recommendations", label: "Recommendations", icon: Shield },
+  { path: "file-analysis", label: "File Analysis", icon: FileCode },
+  { path: "function-class", label: "Function & Class", icon: FunctionSquare },
+  { path: "import-dependency", label: "Dependencies", icon: GitMerge },
 ];
 
 function Sidebar() {

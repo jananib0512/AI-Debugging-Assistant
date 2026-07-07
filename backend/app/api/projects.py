@@ -17,7 +17,10 @@ from app.schemas.project_analyzer import (
     ComplexityAnalysisResponse,
     ConfigurationIntelligenceResponse,
     EntryPointDetectionResponse,
+    FileAnalysisResponse,
     FrameworkIntelligenceResponse,
+    FunctionClassResponse,
+    ImportDependencyResponse,
     ModuleDetectionResponse,
     ProjectInsightsResponse,
     ProjectIntelligenceResponse,
@@ -32,6 +35,9 @@ from app.services.project_insights_service import ProjectInsightsService
 from app.services.project_intelligence_service import ProjectIntelligenceService
 from app.services.project_validation_service import ProjectValidationService
 from app.services.code_quality_service import CodeQualityService
+from app.services.file_analysis_service import FileAnalysisService
+from app.services.function_class_service import FunctionClassService
+from app.services.import_dependency_service import ImportDependencyService
 from app.services.source_code_intelligence_service import SourceCodeIntelligenceService
 from app.services.extraction_service import ExtractionService
 from app.services.metadata_service import MetadataService
@@ -291,6 +297,39 @@ def get_code_quality(
     project_id: int,
     current_user: User = Depends(require_auth),
     service: CodeQualityService = Depends(CodeQualityService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/file-analysis", response_model=FileAnalysisResponse)
+def get_file_analysis(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: FileAnalysisService = Depends(FileAnalysisService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/function-class-analysis", response_model=FunctionClassResponse)
+def get_function_class_analysis(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: FunctionClassService = Depends(FunctionClassService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/import-dependency-analysis", response_model=ImportDependencyResponse)
+def get_import_dependency_analysis(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ImportDependencyService = Depends(ImportDependencyService),
 ):
     return service.analyze(
         user_id=current_user.id, project_id=project_id

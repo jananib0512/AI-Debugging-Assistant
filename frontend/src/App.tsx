@@ -24,6 +24,11 @@ import {
   ConfigurationIntelligence,
   DependencyAnalysis,
   Recommendations,
+  FileAnalysis,
+  FileDetail,
+  FunctionClassAnalysis,
+  FunctionClassDetail,
+  ImportDependencyAnalysis,
 } from "@/pages/project-analyzer";
 import { CodeIntelligencePage } from "@/pages/code-intelligence-page";
 import { CodeQualityPage } from "@/pages/code-quality-page";
@@ -64,6 +69,11 @@ export function App() {
                   <Route path="recommendations" element={<Recommendations />} />
                   <Route path="code-intelligence" element={<CodeIntelligencePage />} />
                   <Route path="code-quality" element={<CodeQualityPage />} />
+                  <Route path="file-analysis" element={<FileAnalysis />} />
+                  <Route path="file-analysis/:filePath" element={<FileDetail />} />
+                  <Route path="function-class" element={<FunctionClassAnalysis />} />
+                  <Route path="function-class/:filePath/:itemName" element={<FunctionClassDetail />} />
+                  <Route path="import-dependency" element={<ImportDependencyAnalysis />} />
                 </Route>
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/scan-history" element={<ScanHistoryPage />} />

@@ -843,6 +843,269 @@ class CodeQualityLanguageBreakdown(BaseModel):
     avg_complexity: float
 
 
+class FileMetricScores(BaseModel):
+    overall: float
+    maintainability: float
+    complexity: float
+    readability: float
+    documentation: float
+    security: float
+
+
+class FileAnalysisIssue(BaseModel):
+    type: str
+    severity: str
+    description: str
+    reason: str
+    suggested_fix: str
+    priority: str
+    line: int | None = None
+
+
+class FileAnalysisDetail(BaseModel):
+    path: str
+    file_name: str
+    extension: str
+    language: str
+    size: int
+    total_lines: int
+    code_lines: int
+    blank_lines: int
+    comment_lines: int
+    functions: int
+    classes: int
+    imports: int
+    complexity: int
+    scores: FileMetricScores
+    health: str
+    tags: list[str]
+    ai_summary: str
+    issues: list[FileAnalysisIssue]
+
+
+class FileAnalysisResponse(BaseModel):
+    files: list[FileAnalysisDetail]
+    total_files: int
+    language_counts: dict[str, int]
+    analyzed_at: datetime
+
+
+class FunctionClassIssue(BaseModel):
+    type: str
+    severity: str
+    description: str
+    reason: str
+    suggested_fix: str
+    line: int | None = None
+
+
+class FunctionParameter(BaseModel):
+    name: str
+    type: str | None = None
+    default_value: str | None = None
+    is_optional: bool = False
+
+
+class FunctionDetail(BaseModel):
+    name: str
+    file_path: str
+    file_name: str
+    language: str
+    module: str = ""
+    parameters: list[FunctionParameter] = []
+    return_type: str | None = None
+    decorators: list[str] = []
+    is_async: bool = False
+    is_generator: bool = False
+    is_lambda: bool = False
+    visibility: str = "public"
+    lines_of_code: int = 0
+    cyclomatic_complexity: int = 1
+    maintainability_score: float = 100.0
+    has_documentation: bool = False
+    issue_count: int = 0
+    health_status: str = "Good"
+    issues: list[FunctionClassIssue] = []
+    ai_insight: str = ""
+
+
+class MethodDetail(BaseModel):
+    name: str
+    parent_class: str = ""
+    parameters: list[FunctionParameter] = []
+    return_type: str | None = None
+    decorators: list[str] = []
+    is_async: bool = False
+    is_static: bool = False
+    is_classmethod: bool = False
+    is_property: bool = False
+    visibility: str = "public"
+    lines_of_code: int = 0
+    cyclomatic_complexity: int = 1
+    maintainability_score: float = 100.0
+    has_documentation: bool = False
+    issue_count: int = 0
+    health_status: str = "Good"
+    issues: list[FunctionClassIssue] = []
+    ai_insight: str = ""
+
+
+class ClassDetail(BaseModel):
+    name: str
+    file_path: str
+    file_name: str
+    language: str
+    module: str = ""
+    base_classes: list[str] = []
+    parent_class: str | None = None
+    child_classes: list[str] = []
+    methods: list[MethodDetail] = []
+    properties: list[str] = []
+    constructors: list[MethodDetail] = []
+    decorators: list[str] = []
+    interfaces: list[str] = []
+    is_abstract: bool = False
+    lines_of_code: int = 0
+    complexity: int = 1
+    maintainability_score: float = 100.0
+    has_documentation: bool = False
+    issue_count: int = 0
+    health_status: str = "Good"
+    issues: list[FunctionClassIssue] = []
+    ai_insight: str = ""
+
+
+class FunctionRelationship(BaseModel):
+    name: str
+    file_path: str
+    callers: list[str] = []
+    called_functions: list[str] = []
+    is_recursive: bool = False
+    is_unused: bool = False
+    is_duplicate: bool = False
+    cross_file_calls: list[str] = []
+
+
+class ClassRelationship(BaseModel):
+    name: str
+    file_path: str
+    inheritance: list[str] = []
+    composition: list[str] = []
+    aggregation: list[str] = []
+    dependency: list[str] = []
+    association: list[str] = []
+
+
+class FunctionClassStats(BaseModel):
+    total_functions: int = 0
+    total_classes: int = 0
+    total_methods: int = 0
+    average_complexity: float = 0.0
+    average_maintainability: float = 100.0
+    total_issues: int = 0
+    language_breakdown: dict[str, int] = {}
+    health_counts: dict[str, int] = {}
+    unused_functions: int = 0
+    recursive_functions: int = 0
+    undocumented_count: int = 0
+
+
+class FunctionClassResponse(BaseModel):
+    functions: list[FunctionDetail] = []
+    classes: list[ClassDetail] = []
+    relationships: list[FunctionRelationship] = []
+    class_relationships: list[ClassRelationship] = []
+    stats: FunctionClassStats
+    ai_insights: list[str] = []
+    analyzed_at: datetime
+
+
+class ImportRecord(BaseModel):
+    module: str
+    symbol: str = ""
+    alias: str | None = None
+    source_file: str
+    target_file: str | None = None
+    import_type: str = "internal"
+    language: str
+    is_relative: bool = False
+    is_wildcard: bool = False
+    is_dynamic: bool = False
+    is_unused: bool = False
+    is_duplicate: bool = False
+    is_broken: bool = False
+    line_number: int | None = None
+    resolved: bool = True
+    confidence: float = 1.0
+
+
+class FileDependency(BaseModel):
+    source_file: str
+    target_file: str | None = None
+    target_module: str = ""
+    dependency_type: str = "import"
+    language: str
+    import_count: int = 1
+    is_external: bool = False
+    is_circular: bool = False
+    is_broken: bool = False
+    is_unused: bool = False
+
+
+class CircularDependency(BaseModel):
+    chain: list[str]
+    files: list[str]
+    severity: str = "medium"
+    suggested_resolution: str = ""
+
+
+class DependencyGraphNode(BaseModel):
+    id: str
+    label: str
+    type: str = "file"
+    language: str = ""
+    file_count: int = 1
+    import_count: int = 0
+
+
+class DependencyGraphEdge(BaseModel):
+    source: str
+    target: str
+    weight: int = 1
+    type: str = "import"
+
+
+class DependencyGraph(BaseModel):
+    nodes: list[DependencyGraphNode] = []
+    edges: list[DependencyGraphEdge] = []
+
+
+class DependencyMetrics(BaseModel):
+    total_files: int = 0
+    total_imports: int = 0
+    total_dependencies: int = 0
+    external_libraries: int = 0
+    internal_libraries: int = 0
+    broken_dependencies: int = 0
+    unused_imports: int = 0
+    circular_dependencies: int = 0
+    average_dependency_depth: float = 0.0
+    coupling_score: float = 0.0
+    language_breakdown: dict[str, int] = {}
+    dependency_type_counts: dict[str, int] = {}
+
+
+class ImportDependencyResponse(BaseModel):
+    imports: list[ImportRecord]
+    dependencies: list[FileDependency]
+    circular_dependencies: list[CircularDependency]
+    graph: DependencyGraph
+    metrics: DependencyMetrics
+    insights: list[str]
+    recommendations: list[str]
+    analyzed_at: datetime
+
+
 class CodeQualityResponse(BaseModel):
     overall_score: QualityScoreInfo
     maintainability_score: QualityScoreInfo

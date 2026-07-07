@@ -11,3 +11,8 @@ export { DependencyAnalysis } from "./DependencyAnalysis";
 export { Recommendations } from "./Recommendations";
 export { CodeIntelligencePage } from "@/pages/code-intelligence-page";
 export { CodeQualityPage } from "@/pages/code-quality-page";
+export { FileAnalysis } from "./FileAnalysis";
+export { FileDetail } from "./FileDetail";
+export { FunctionClassAnalysis } from "./FunctionClassAnalysis";
+export { FunctionClassDetail } from "./FunctionClassDetail";
+export { ImportDependencyAnalysis } from "./ImportDependencyAnalysis";

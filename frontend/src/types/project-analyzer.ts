@@ -694,6 +694,53 @@ export interface CodeQualityLanguageBreakdown {
   avg_complexity: number;
 }
 
+export interface FileMetricScores {
+  overall: number;
+  maintainability: number;
+  complexity: number;
+  readability: number;
+  documentation: number;
+  security: number;
+}
+
+export interface FileAnalysisIssue {
+  type: string;
+  severity: string;
+  description: string;
+  reason: string;
+  suggested_fix: string;
+  priority: string;
+  line: number | null;
+}
+
+export interface FileAnalysisDetail {
+  path: string;
+  file_name: string;
+  extension: string;
+  language: string;
+  size: number;
+  total_lines: number;
+  code_lines: number;
+  blank_lines: number;
+  comment_lines: number;
+  functions: number;
+  classes: number;
+  imports: number;
+  complexity: number;
+  scores: FileMetricScores;
+  health: string;
+  tags: string[];
+  ai_summary: string;
+  issues: FileAnalysisIssue[];
+}
+
+export interface FileAnalysisResponse {
+  files: FileAnalysisDetail[];
+  total_files: number;
+  language_counts: Record<string, number>;
+  analyzed_at: string;
+}
+
 export interface CodeQualityResponse {
   overall_score: QualityScoreInfo;
   maintainability_score: QualityScoreInfo;
@@ -714,6 +761,136 @@ export interface CodeQualityResponse {
   analyzed_at: string;
 }
 
+export interface FunctionClassIssue {
+  type: string;
+  severity: string;
+  description: string;
+  reason: string;
+  suggested_fix: string;
+  line: number | null;
+}
+
+export interface FunctionParameter {
+  name: string;
+  type: string | null;
+  default_value: string | null;
+  is_optional: boolean;
+}
+
+export interface FunctionDetail {
+  name: string;
+  file_path: string;
+  file_name: string;
+  language: string;
+  module: string;
+  parameters: FunctionParameter[];
+  return_type: string | null;
+  decorators: string[];
+  is_async: boolean;
+  is_generator: boolean;
+  is_lambda: boolean;
+  visibility: string;
+  lines_of_code: number;
+  cyclomatic_complexity: number;
+  maintainability_score: number;
+  has_documentation: boolean;
+  issue_count: number;
+  health_status: string;
+  issues: FunctionClassIssue[];
+  ai_insight: string;
+}
+
+export interface MethodDetail {
+  name: string;
+  parent_class: string;
+  parameters: FunctionParameter[];
+  return_type: string | null;
+  decorators: string[];
+  is_async: boolean;
+  is_static: boolean;
+  is_classmethod: boolean;
+  is_property: boolean;
+  visibility: string;
+  lines_of_code: number;
+  cyclomatic_complexity: number;
+  maintainability_score: number;
+  has_documentation: boolean;
+  issue_count: number;
+  health_status: string;
+  issues: FunctionClassIssue[];
+  ai_insight: string;
+}
+
+export interface ClassDetail {
+  name: string;
+  file_path: string;
+  file_name: string;
+  language: string;
+  module: string;
+  base_classes: string[];
+  parent_class: string | null;
+  child_classes: string[];
+  methods: MethodDetail[];
+  properties: string[];
+  constructors: MethodDetail[];
+  decorators: string[];
+  interfaces: string[];
+  is_abstract: boolean;
+  lines_of_code: number;
+  complexity: number;
+  maintainability_score: number;
+  has_documentation: boolean;
+  issue_count: number;
+  health_status: string;
+  issues: FunctionClassIssue[];
+  ai_insight: string;
+}
+
+export interface FunctionRelationship {
+  name: string;
+  file_path: string;
+  callers: string[];
+  called_functions: string[];
+  is_recursive: boolean;
+  is_unused: boolean;
+  is_duplicate: boolean;
+  cross_file_calls: string[];
+}
+
+export interface ClassRelationship {
+  name: string;
+  file_path: string;
+  inheritance: string[];
+  composition: string[];
+  aggregation: string[];
+  dependency: string[];
+  association: string[];
+}
+
+export interface FunctionClassStats {
+  total_functions: number;
+  total_classes: number;
+  total_methods: number;
+  average_complexity: number;
+  average_maintainability: number;
+  total_issues: number;
+  language_breakdown: Record<string, number>;
+  health_counts: Record<string, number>;
+  unused_functions: number;
+  recursive_functions: number;
+  undocumented_count: number;
+}
+
+export interface FunctionClassResponse {
+  functions: FunctionDetail[];
+  classes: ClassDetail[];
+  relationships: FunctionRelationship[];
+  class_relationships: ClassRelationship[];
+  stats: FunctionClassStats;
+  ai_insights: string[];
+  analyzed_at: string;
+}
+
 export interface ConfigurationIntelligenceResponse {
   detected_files: ConfigFileInfo[];
   missing_files: ConfigFileInfo[];
@@ -727,5 +904,91 @@ export interface ConfigurationIntelligenceResponse {
   recommendations: string[];
   health: ConfigHealthInfo;
   readiness_score: number;
+  analyzed_at: string;
+}
+
+export interface ImportRecord {
+  module: string;
+  symbol: string;
+  alias: string | null;
+  source_file: string;
+  target_file: string | null;
+  import_type: string;
+  language: string;
+  is_relative: boolean;
+  is_wildcard: boolean;
+  is_dynamic: boolean;
+  is_unused: boolean;
+  is_duplicate: boolean;
+  is_broken: boolean;
+  line_number: number | null;
+  resolved: boolean;
+  confidence: number;
+}
+
+export interface FileDependency {
+  source_file: string;
+  target_file: string | null;
+  target_module: string;
+  dependency_type: string;
+  language: string;
+  import_count: number;
+  is_external: boolean;
+  is_circular: boolean;
+  is_broken: boolean;
+  is_unused: boolean;
+}
+
+export interface CircularDependency {
+  chain: string[];
+  files: string[];
+  severity: string;
+  suggested_resolution: string;
+}
+
+export interface DependencyGraphNode {
+  id: string;
+  label: string;
+  type: string;
+  language: string;
+  file_count: number;
+  import_count: number;
+}
+
+export interface DependencyGraphEdge {
+  source: string;
+  target: string;
+  weight: number;
+  type: string;
+}
+
+export interface DependencyGraph {
+  nodes: DependencyGraphNode[];
+  edges: DependencyGraphEdge[];
+}
+
+export interface DependencyMetrics {
+  total_files: number;
+  total_imports: number;
+  total_dependencies: number;
+  external_libraries: number;
+  internal_libraries: number;
+  broken_dependencies: number;
+  unused_imports: number;
+  circular_dependencies: number;
+  average_dependency_depth: number;
+  coupling_score: number;
+  language_breakdown: Record<string, number>;
+  dependency_type_counts: Record<string, number>;
+}
+
+export interface ImportDependencyResponse {
+  imports: ImportRecord[];
+  dependencies: FileDependency[];
+  circular_dependencies: CircularDependency[];
+  graph: DependencyGraph;
+  metrics: DependencyMetrics;
+  insights: string[];
+  recommendations: string[];
   analyzed_at: string;
 }

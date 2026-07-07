@@ -6,7 +6,10 @@ import type {
   CodeQualityResponse,
   ConfigurationIntelligenceResponse,
   EntryPointDetectionResponse,
+  FileAnalysisResponse,
   FrameworkIntelligenceResponse,
+  FunctionClassResponse,
+  ImportDependencyResponse,
   ModuleDetectionResponse,
   ProjectAnalysis,
   ProjectInsightsResponse,
@@ -109,6 +112,33 @@ export async function getCodeIntelligence(
 ): Promise<SourceCodeIntelligenceResponse> {
   const res = await api.get<SourceCodeIntelligenceResponse>(
     `/projects/${projectId}/code-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getFunctionClassAnalysis(
+  projectId: number,
+): Promise<FunctionClassResponse> {
+  const res = await api.get<FunctionClassResponse>(
+    `/projects/${projectId}/function-class-analysis`,
+  );
+  return res.data;
+}
+
+export async function getImportDependencyAnalysis(
+  projectId: number,
+): Promise<ImportDependencyResponse> {
+  const res = await api.get<ImportDependencyResponse>(
+    `/projects/${projectId}/import-dependency-analysis`,
+  );
+  return res.data;
+}
+
+export async function getFileAnalysis(
+  projectId: number,
+): Promise<FileAnalysisResponse> {
+  const res = await api.get<FileAnalysisResponse>(
+    `/projects/${projectId}/file-analysis`,
   );
   return res.data;
 }
