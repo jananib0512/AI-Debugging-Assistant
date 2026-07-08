@@ -38,6 +38,9 @@ import {
   SecurityIntelligence,
   PerformanceIntelligence,
   MaintainabilityIntelligence,
+  RefactoringIntelligence,
+  DocumentationIntelligence,
+  TestIntelligence,
 } from "@/pages/project-analyzer";
 import { CodeIntelligencePage } from "@/pages/code-intelligence-page";
 import { CodeQualityPage } from "@/pages/code-quality-page";
@@ -92,6 +95,9 @@ export function App() {
                   <Route path="security-intelligence" element={<SecurityIntelligence />} />
                   <Route path="performance-intelligence" element={<PerformanceIntelligence />} />
                   <Route path="maintainability-intelligence" element={<MaintainabilityIntelligence />} />
+                  <Route path="refactoring-intelligence" element={<RefactoringIntelligence />} />
+                  <Route path="documentation-intelligence" element={<DocumentationIntelligence />} />
+                  <Route path="test-intelligence" element={<TestIntelligence />} />
                   <Route path="*" element={
                     <div className="flex flex-col items-center justify-center py-20">
                       <div className="rounded-lg border border-[#E5E7EB] bg-white px-6 py-8 text-center shadow-sm max-w-md">

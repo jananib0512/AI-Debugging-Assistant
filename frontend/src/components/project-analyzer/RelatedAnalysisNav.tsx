@@ -100,6 +100,27 @@ const relatedMap: Record<string, RelatedLink[]> = {
     { path: "unified-intelligence", label: "Unified Dashboard", desc: "View enterprise intelligence hub" },
     { path: "maintainability-intelligence", label: "Maintainability Intel", desc: "View maintainability analysis" },
   ],
+  "refactoring-intelligence": [
+    { path: "maintainability-intelligence", label: "Maintainability Intel", desc: "View code smells and technical debt" },
+    { path: "documentation-intelligence", label: "Documentation Intel", desc: "View documentation quality" },
+    { path: "code-quality", label: "Code Quality", desc: "View quality scores and issues" },
+    { path: "dependencies", label: "Dependencies", desc: "View dependency structure" },
+    { path: "unified-intelligence", label: "Unified Dashboard", desc: "View enterprise intelligence hub" },
+  ],
+  "documentation-intelligence": [
+    { path: "test-intelligence", label: "Test Intelligence", desc: "View test coverage and quality" },
+    { path: "refactoring-intelligence", label: "Refactoring Intel", desc: "View refactoring opportunities" },
+    { path: "maintainability-intelligence", label: "Maintainability Intel", desc: "View code smells and technical debt" },
+    { path: "code-quality", label: "Code Quality", desc: "View quality scores and issues" },
+    { path: "unified-intelligence", label: "Unified Dashboard", desc: "View enterprise intelligence hub" },
+  ],
+  "test-intelligence": [
+    { path: "documentation-intelligence", label: "Documentation Intel", desc: "View documentation quality" },
+    { path: "refactoring-intelligence", label: "Refactoring Intel", desc: "View refactoring opportunities" },
+    { path: "maintainability-intelligence", label: "Maintainability Intel", desc: "View code smells and technical debt" },
+    { path: "code-quality", label: "Code Quality", desc: "View quality scores and issues" },
+    { path: "unified-intelligence", label: "Unified Dashboard", desc: "View enterprise intelligence hub" },
+  ],
   "unified-intelligence": [
     { path: "architecture", label: "Architecture", desc: "View architecture health" },
     { path: "dependencies", label: "Dependencies", desc: "View dependency health" },

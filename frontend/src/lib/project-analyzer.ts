@@ -6,6 +6,7 @@ import type {
   CallGraphResponse,
   CodeQualityResponse,
   ConfigurationIntelligenceResponse,
+  DocumentationIntelligenceResponse,
   EntryPointDetectionResponse,
   FileAnalysisResponse,
   FileIntelligenceResponse,
@@ -17,12 +18,14 @@ import type {
   ProjectAnalysis,
   ProjectInsightsResponse,
   ProjectIntelligenceResponse,
+  RefactoringIntelligenceResponse,
   RiskIntelligenceResponse,
   SecurityIntelligenceResponse,
   PerformanceIntelligenceResponse,
   MaintainabilityIntelligenceResponse,
   SemanticResponse,
   SourceCodeIntelligenceResponse,
+  TestIntelligenceResponse,
   UnifiedIntelligenceResponse,
 } from "@/types/project-analyzer";
 
@@ -238,6 +241,33 @@ export async function getMaintainabilityIntelligence(
 ): Promise<MaintainabilityIntelligenceResponse> {
   const res = await api.get<MaintainabilityIntelligenceResponse>(
     `/projects/${projectId}/maintainability-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getRefactoringIntelligence(
+  projectId: number,
+): Promise<RefactoringIntelligenceResponse> {
+  const res = await api.get<RefactoringIntelligenceResponse>(
+    `/projects/${projectId}/refactoring-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getDocumentationIntelligence(
+  projectId: number,
+): Promise<DocumentationIntelligenceResponse> {
+  const res = await api.get<DocumentationIntelligenceResponse>(
+    `/projects/${projectId}/documentation-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getTestIntelligence(
+  projectId: number,
+): Promise<TestIntelligenceResponse> {
+  const res = await api.get<TestIntelligenceResponse>(
+    `/projects/${projectId}/test-intelligence`,
   );
   return res.data;
 }

@@ -30,7 +30,10 @@ from app.schemas.project_analyzer import (
     RiskIntelligenceResponse,
     SecurityIntelligenceResponse,
     PerformanceIntelligenceResponse,
+    DocumentationIntelligenceResponse,
     MaintainabilityIntelligenceResponse,
+    RefactoringIntelligenceResponse,
+    TestIntelligenceResponse,
     SemanticResponse,
     UnifiedIntelligenceResponse,
 )
@@ -41,7 +44,10 @@ from app.services.unified_intelligence_service import UnifiedIntelligenceService
 from app.services.risk_intelligence_service import RiskIntelligenceService
 from app.services.security_intelligence_service import SecurityIntelligenceService
 from app.services.performance_intelligence_service import PerformanceIntelligenceService
+from app.services.documentation_intelligence_service import DocumentationIntelligenceService
 from app.services.maintainability_intelligence_service import MaintainabilityIntelligenceService
+from app.services.refactoring_intelligence_service import RefactoringIntelligenceService
+from app.services.test_intelligence_service import TestIntelligenceService
 from app.services.complexity_analysis_service import ComplexityAnalysisService
 from app.services.configuration_intelligence_service import ConfigurationIntelligenceService
 from app.services.entry_point_detection_service import EntryPointDetectionService
@@ -447,6 +453,39 @@ def get_maintainability_intelligence(
     project_id: int,
     current_user: User = Depends(require_auth),
     service: MaintainabilityIntelligenceService = Depends(MaintainabilityIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/refactoring-intelligence", response_model=RefactoringIntelligenceResponse)
+def get_refactoring_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: RefactoringIntelligenceService = Depends(RefactoringIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/documentation-intelligence", response_model=DocumentationIntelligenceResponse)
+def get_documentation_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: DocumentationIntelligenceService = Depends(DocumentationIntelligenceService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/test-intelligence", response_model=TestIntelligenceResponse)
+def get_test_intelligence(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: TestIntelligenceService = Depends(TestIntelligenceService),
 ):
     return service.analyze(
         user_id=current_user.id, project_id=project_id

@@ -1729,11 +1729,226 @@ export interface MaintainabilitySummary {
   prioritized_recommendations: string[];
 }
 
+export interface DocumentationScore {
+  overall_documentation_score: number;
+  documentation_coverage: number;
+  documentation_quality: number;
+  developer_readiness: number;
+  ai_confidence: number;
+  risk_level: string;
+}
+
+export interface CodeDocumentationItem {
+  type: string;
+  name: string;
+  file: string;
+  documented: boolean;
+  documentation_type: string;
+  line: number;
+  quality: string;
+}
+
+export interface ProjectDocItem {
+  name: string;
+  path: string;
+  doc_type: string;
+  present: boolean;
+  quality: string;
+  size: number;
+  completeness: string;
+}
+
+export interface DocFinding {
+  name: string;
+  type: string;
+  severity: string;
+  affected_files: string[];
+  affected_functions: string[];
+  affected_classes: string[];
+  description: string;
+  recommendation: string;
+  estimated_improvement: string;
+}
+
+export interface DocumentationSummary {
+  missing_readme: boolean;
+  missing_license: boolean;
+  missing_contributing: boolean;
+  missing_changelog: boolean;
+  missing_architecture_docs: boolean;
+  coverage_percentage: number;
+  documented_functions: number;
+  undocumented_functions: number;
+  documented_classes: number;
+  undocumented_classes: number;
+  files_with_comments: number;
+  files_without_comments: number;
+  summary_text: string;
+  prioritized_recommendations: string[];
+}
+
+export interface DocumentationIntelligenceResponse {
+  documentation_score: DocumentationScore;
+  code_documentation: CodeDocumentationItem[];
+  project_docs: ProjectDocItem[];
+  findings: DocFinding[];
+  summary: DocumentationSummary;
+  analyzed_at: string;
+}
+
+export interface TestScore {
+  overall_test_score: number;
+  test_coverage: number;
+  testing_health: number;
+  regression_readiness: number;
+  ai_confidence: number;
+  risk_level: string;
+}
+
+export interface DetectedFramework {
+  name: string;
+  type: string;
+  version: string;
+  config_file: string;
+  reliability: string;
+}
+
+export interface TestFileInfo {
+  path: string;
+  file_name: string;
+  framework: string;
+  test_count: number;
+  assertion_count: number;
+  fixture_count: number;
+  mock_count: number;
+  test_types: string[];
+  naming_quality: string;
+  organization_quality: string;
+  maintainability: string;
+  coverage_estimate: number;
+  has_failures: boolean;
+  lines_of_code: number;
+}
+
+export interface UntestedComponent {
+  name: string;
+  type: string;
+  path: string;
+  risk: string;
+  reason: string;
+  suggested_test_type: string;
+  priority: number;
+}
+
+export interface MissingTestCase {
+  name: string;
+  module: string;
+  type: string;
+  severity: string;
+  affected_file: string;
+  suggestion: string;
+  estimated_impact: string;
+}
+
+export interface TestQualityMetrics {
+  naming_quality: number;
+  assertion_density: number;
+  coverage_depth: number;
+  organization_score: number;
+  maintainability_score: number;
+  reliability_score: number;
+}
+
+export interface TestRecommendation {
+  priority: number;
+  category: string;
+  title: string;
+  description: string;
+  suggested_framework: string;
+  estimated_coverage_improvement: number;
+  affected_modules: string[];
+}
+
+export interface TestSummary {
+  total_test_files: number;
+  total_test_functions: number;
+  total_test_classes: number;
+  total_assertions: number;
+  total_fixtures: number;
+  total_mocks: number;
+  untested_files: number;
+  untested_functions: number;
+  untested_classes: number;
+  coverage_percentage: number;
+  detected_frameworks: string[];
+  summary_text: string;
+  prioritized_recommendations: string[];
+}
+
+export interface TestIntelligenceResponse {
+  test_score: TestScore;
+  detected_frameworks: DetectedFramework[];
+  test_files: TestFileInfo[];
+  untested_components: UntestedComponent[];
+  missing_test_cases: MissingTestCase[];
+  quality_metrics: TestQualityMetrics;
+  recommendations: TestRecommendation[];
+  summary: TestSummary;
+  analyzed_at: string;
+}
+
 export interface MaintainabilityIntelligenceResponse {
   maintainability_score: MaintainabilityScore;
   code_smells: CodeSmellItem[];
   technical_debt: TechnicalDebtEstimate;
   module_health: ModuleHealthScore[];
   summary: MaintainabilitySummary;
+  analyzed_at: string;
+}
+
+export interface RefactoringScore {
+  refactoring_score: number;
+  project_cleanliness: number;
+  code_organization: number;
+  debt_reduction_potential: number;
+  refactoring_readiness: number;
+  ai_confidence: number;
+  risk_level: string;
+}
+
+export interface ImpactEstimate {
+  estimated_files_changed: number;
+  estimated_complexity_reduction: string;
+  estimated_maintainability_improvement: string;
+  estimated_risk: string;
+}
+
+export interface RefactoringOpportunity {
+  name: string;
+  type: string;
+  severity: string;
+  affected_files: string[];
+  affected_classes: string[];
+  affected_functions: string[];
+  description: string;
+  reason: string;
+  recommendation: string;
+  impact: ImpactEstimate;
+  expected_benefit: string;
+}
+
+export interface RefactoringSummary {
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  summary_text: string;
+  roadmap: string[];
+}
+
+export interface RefactoringIntelligenceResponse {
+  refactoring_score: RefactoringScore;
+  opportunities: RefactoringOpportunity[];
+  summary: RefactoringSummary;
   analyzed_at: string;
 }

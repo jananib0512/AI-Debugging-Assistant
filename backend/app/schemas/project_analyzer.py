@@ -1886,3 +1886,227 @@ class MaintainabilityIntelligenceResponse(BaseModel):
     module_health: list[ModuleHealthScore] = []
     summary: MaintainabilitySummary = MaintainabilitySummary()
     analyzed_at: datetime
+
+
+# ── Phase 3C.5: AI Refactoring Intelligence ───────────────────────────────────
+
+
+class RefactoringScore(BaseModel):
+    refactoring_score: float = 0.0
+    project_cleanliness: float = 0.0
+    code_organization: float = 0.0
+    debt_reduction_potential: float = 0.0
+    refactoring_readiness: float = 0.0
+    ai_confidence: float = 0.0
+    risk_level: str = "unknown"
+
+
+class ImpactEstimate(BaseModel):
+    estimated_files_changed: int = 0
+    estimated_complexity_reduction: str = ""
+    estimated_maintainability_improvement: str = ""
+    estimated_risk: str = "low"
+
+
+class RefactoringOpportunity(BaseModel):
+    name: str
+    type: str
+    severity: str = "medium"
+    affected_files: list[str] = []
+    affected_classes: list[str] = []
+    affected_functions: list[str] = []
+    description: str = ""
+    reason: str = ""
+    recommendation: str = ""
+    impact: ImpactEstimate = ImpactEstimate()
+    expected_benefit: str = ""
+
+
+class RefactoringSummary(BaseModel):
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    summary_text: str = ""
+    roadmap: list[str] = []
+
+
+class RefactoringIntelligenceResponse(BaseModel):
+    refactoring_score: RefactoringScore
+    opportunities: list[RefactoringOpportunity] = []
+    summary: RefactoringSummary = RefactoringSummary()
+    analyzed_at: datetime
+
+
+# ── Phase 3C.6: Documentation Intelligence ────────────────────────────────────
+
+
+class DocumentationScore(BaseModel):
+    overall_documentation_score: float = 0.0
+    documentation_coverage: float = 0.0
+    documentation_quality: float = 0.0
+    developer_readiness: float = 0.0
+    ai_confidence: float = 0.0
+    risk_level: str = "unknown"
+
+
+class CodeDocumentationItem(BaseModel):
+    type: str
+    name: str
+    file: str = ""
+    documented: bool = False
+    documentation_type: str = ""  # docstring / comment / inline
+    line: int = 0
+    quality: str = "missing"  # excellent / good / average / poor / missing
+
+
+class ProjectDocItem(BaseModel):
+    name: str
+    path: str = ""
+    doc_type: str = ""
+    present: bool = False
+    quality: str = "missing"
+    size: int = 0
+    completeness: str = "missing"  # comprehensive / partial / missing
+
+
+class DocFinding(BaseModel):
+    name: str
+    type: str
+    severity: str = "medium"
+    affected_files: list[str] = []
+    affected_functions: list[str] = []
+    affected_classes: list[str] = []
+    description: str = ""
+    recommendation: str = ""
+    estimated_improvement: str = ""
+
+
+class DocumentationSummary(BaseModel):
+    missing_readme: bool = False
+    missing_license: bool = False
+    missing_contributing: bool = False
+    missing_changelog: bool = False
+    missing_architecture_docs: bool = False
+    coverage_percentage: float = 0.0
+    documented_functions: int = 0
+    undocumented_functions: int = 0
+    documented_classes: int = 0
+    undocumented_classes: int = 0
+    files_with_comments: int = 0
+    files_without_comments: int = 0
+    summary_text: str = ""
+    prioritized_recommendations: list[str] = []
+
+
+class DocumentationIntelligenceResponse(BaseModel):
+    documentation_score: DocumentationScore
+    code_documentation: list[CodeDocumentationItem] = []
+    project_docs: list[ProjectDocItem] = []
+    findings: list[DocFinding] = []
+    summary: DocumentationSummary = DocumentationSummary()
+    analyzed_at: datetime
+
+
+# ── Phase 3C.7: Test Intelligence ────────────────────────────────────────────
+
+
+class TestScore(BaseModel):
+    overall_test_score: float = 0.0
+    test_coverage: float = 0.0
+    testing_health: float = 0.0
+    regression_readiness: float = 0.0
+    ai_confidence: float = 0.0
+    risk_level: str = "unknown"
+
+
+class DetectedFramework(BaseModel):
+    name: str
+    type: str = ""  # python/js/java/e2e/etc.
+    version: str = ""
+    config_file: str = ""
+    reliability: str = "unknown"  # high / medium / low / unknown
+
+
+class TestFileInfo(BaseModel):
+    path: str
+    file_name: str
+    framework: str = ""
+    test_count: int = 0
+    assertion_count: int = 0
+    fixture_count: int = 0
+    mock_count: int = 0
+    test_types: list[str] = []  # unit / integration / api / e2e / performance / security / regression / smoke
+    naming_quality: str = "unknown"
+    organization_quality: str = "unknown"
+    maintainability: str = "unknown"
+    coverage_estimate: float = 0.0
+    has_failures: bool = False
+    lines_of_code: int = 0
+
+
+class UntestedComponent(BaseModel):
+    name: str
+    type: str  # file / function / class / module
+    path: str = ""
+    risk: str = "medium"
+    reason: str = ""
+    suggested_test_type: str = ""
+    priority: int = 0
+
+
+class MissingTestCase(BaseModel):
+    name: str
+    module: str = ""
+    type: str = "unit"
+    severity: str = "medium"
+    affected_file: str = ""
+    suggestion: str = ""
+    estimated_impact: str = ""
+
+
+class TestQualityMetrics(BaseModel):
+    naming_quality: float = 0.0
+    assertion_density: float = 0.0
+    coverage_depth: float = 0.0
+    organization_score: float = 0.0
+    maintainability_score: float = 0.0
+    reliability_score: float = 0.0
+
+
+class TestRecommendation(BaseModel):
+    priority: int = 0
+    category: str = ""
+    title: str = ""
+    description: str = ""
+    suggested_framework: str = ""
+    estimated_coverage_improvement: float = 0.0
+    affected_modules: list[str] = []
+
+
+class TestSummary(BaseModel):
+    total_test_files: int = 0
+    total_test_functions: int = 0
+    total_test_classes: int = 0
+    total_assertions: int = 0
+    total_fixtures: int = 0
+    total_mocks: int = 0
+    untested_files: int = 0
+    untested_functions: int = 0
+    untested_classes: int = 0
+    coverage_percentage: float = 0.0
+    detected_frameworks: list[str] = []
+    summary_text: str = ""
+    prioritized_recommendations: list[str] = []
+
+
+class TestIntelligenceResponse(BaseModel):
+    test_score: TestScore
+    detected_frameworks: list[DetectedFramework] = []
+    test_files: list[TestFileInfo] = []
+    untested_components: list[UntestedComponent] = []
+    missing_test_cases: list[MissingTestCase] = []
+    quality_metrics: TestQualityMetrics = TestQualityMetrics()
+    recommendations: list[TestRecommendation] = []
+    summary: TestSummary = TestSummary()
+    analyzed_at: datetime

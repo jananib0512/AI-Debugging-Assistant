@@ -25,3 +25,6 @@ export { RiskIntelligence } from "./RiskIntelligence";
 export { SecurityIntelligence } from "./SecurityIntelligence";
 export { PerformanceIntelligence } from "./PerformanceIntelligence";
 export { MaintainabilityIntelligence } from "./MaintainabilityIntelligence";
+export { RefactoringIntelligence } from "./RefactoringIntelligence";
+export { DocumentationIntelligence } from "./DocumentationIntelligence";
+export { TestIntelligence } from "./TestIntelligence";

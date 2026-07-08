@@ -21,6 +21,9 @@ import {
   FileSearch,
   FileText,
   FunctionSquare,
+  GitCompare,
+  BookOpen,
+  FlaskConical,
   Radar,
   RefreshCw,
 } from "lucide-react";
@@ -61,6 +64,9 @@ const categoryItems = [
   { path: "security-intelligence", label: "Security Intelligence", icon: Shield, desc: "Security vulnerability detection, dependency auditing, and configuration analysis." },
   { path: "performance-intelligence", label: "Performance Intelligence", icon: Zap, desc: "Identify bottlenecks, optimize execution paths, and improve runtime efficiency." },
   { path: "maintainability-intelligence", label: "Maintainability Intelligence", icon: Wrench, desc: "Code smell detection, technical debt estimation, refactoring opportunities, and module health analysis." },
+  { path: "refactoring-intelligence", label: "AI Refactoring Intelligence", icon: GitCompare, desc: "Structural improvement detection, refactoring opportunities, impact analysis, and prioritized roadmap." },
+  { path: "documentation-intelligence", label: "Documentation Intelligence", icon: BookOpen, desc: "Documentation quality analysis, coverage assessment, and prioritized recommendations." },
+  { path: "test-intelligence", label: "Test Intelligence", icon: FlaskConical, desc: "Test coverage analysis, quality metrics, framework detection, and gap identification." },
 ];
 
 const containerVariants = {
