@@ -7,6 +7,13 @@ import type {
   BugDetectionWorkspaceResponse,
   PipelineStatusResponse,
   SyntaxDetectionResponse,
+  StaticCodeAnalysisResponse,
+  DependencyAnalysisResponse,
+  RuntimeAnalysisResponse,
+  SecurityAnalysisResponse,
+  PerformanceAnalysisResponse,
+  ArchitectureAnalysisResponse,
+  PrioritizationResponse,
   CallGraphResponse,
   CodeQualityResponse,
   ConfigurationIntelligenceResponse,
@@ -318,6 +325,69 @@ export async function getSyntaxDetection(
 ): Promise<SyntaxDetectionResponse> {
   const res = await api.get<SyntaxDetectionResponse>(
     `/projects/${projectId}/bug-detection/syntax-detection`,
+  );
+  return res.data;
+}
+
+export async function getStaticCodeAnalysis(
+  projectId: number,
+): Promise<StaticCodeAnalysisResponse> {
+  const res = await api.get<StaticCodeAnalysisResponse>(
+    `/projects/${projectId}/bug-detection/static-analysis`,
+  );
+  return res.data;
+}
+
+export async function getDependencyAnalysis(
+  projectId: number,
+): Promise<DependencyAnalysisResponse> {
+  const res = await api.get<DependencyAnalysisResponse>(
+    `/projects/${projectId}/bug-detection/dependency-analysis`,
+  );
+  return res.data;
+}
+
+export async function getRuntimeAnalysis(
+  projectId: number,
+): Promise<RuntimeAnalysisResponse> {
+  const res = await api.get<RuntimeAnalysisResponse>(
+    `/projects/${projectId}/bug-detection/runtime-analysis`,
+  );
+  return res.data;
+}
+
+export async function getSecurityAnalysis(
+  projectId: number,
+): Promise<SecurityAnalysisResponse> {
+  const res = await api.get<SecurityAnalysisResponse>(
+    `/projects/${projectId}/bug-detection/security-analysis`,
+  );
+  return res.data;
+}
+
+export async function getPerformanceAnalysis(
+  projectId: number,
+): Promise<PerformanceAnalysisResponse> {
+  const res = await api.get<PerformanceAnalysisResponse>(
+    `/projects/${projectId}/bug-detection/performance-analysis`,
+  );
+  return res.data;
+}
+
+export async function getArchitectureAnalysis(
+  projectId: number,
+): Promise<ArchitectureAnalysisResponse> {
+  const res = await api.get<ArchitectureAnalysisResponse>(
+    `/projects/${projectId}/bug-detection/architecture-analysis`,
+  );
+  return res.data;
+}
+
+export async function getBugPrioritization(
+  projectId: number,
+): Promise<PrioritizationResponse> {
+  const res = await api.get<PrioritizationResponse>(
+    `/projects/${projectId}/bug-detection/prioritization`,
   );
   return res.data;
 }

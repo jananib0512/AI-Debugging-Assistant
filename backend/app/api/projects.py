@@ -16,6 +16,13 @@ from app.schemas.project_analyzer import (
     BugDetectionWorkspaceResponse,
     PipelineStatusResponse,
     SyntaxDetectionResponse,
+    StaticCodeAnalysisResponse,
+    DependencyAnalysisResponse,
+    RuntimeAnalysisResponse,
+    SecurityAnalysisResponse,
+    PerformanceAnalysisResponse,
+    ArchitectureAnalysisResponse,
+    PrioritizationResponse,
     CallGraphResponse,
     CodeQualityResponse,
     SourceCodeIntelligenceResponse,
@@ -74,6 +81,13 @@ from app.services.ai_engineering_readiness_service import AiEngineeringReadiness
 from app.services.bug_detection_workspace_service import BugDetectionWorkspaceService
 from app.services.bug_detection_pipeline_service import BugDetectionPipelineService
 from app.services.syntax_detection_service import SyntaxDetectionService
+from app.services.static_code_analysis_service import StaticCodeAnalysisService
+from app.services.dependency_detection_service import DependencyDetectionService
+from app.services.runtime_detection_service import RuntimeDetectionService
+from app.services.security_detection_service import SecurityDetectionService
+from app.services.performance_detection_service import PerformanceDetectionService
+from app.services.architecture_bug_service import ArchitectureBugService
+from app.services.bug_prioritization_service import BugPrioritizationService
 from app.services.production_readiness_service import ProductionReadinessService
 from app.services.project_analyzer_service import (
     ProjectAnalyzerCoreService,
@@ -553,5 +567,82 @@ def get_syntax_detection(
     service: SyntaxDetectionService = Depends(SyntaxDetectionService),
 ):
     return service.detect(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/static-analysis", response_model=StaticCodeAnalysisResponse)
+def get_static_code_analysis(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: StaticCodeAnalysisService = Depends(StaticCodeAnalysisService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/dependency-analysis", response_model=DependencyAnalysisResponse)
+def get_dependency_analysis(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: DependencyDetectionService = Depends(DependencyDetectionService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/runtime-analysis", response_model=RuntimeAnalysisResponse)
+def get_runtime_analysis(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: RuntimeDetectionService = Depends(RuntimeDetectionService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/security-analysis", response_model=SecurityAnalysisResponse)
+def get_security_analysis(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: SecurityDetectionService = Depends(SecurityDetectionService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/performance-analysis", response_model=PerformanceAnalysisResponse)
+def get_performance_analysis(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: PerformanceDetectionService = Depends(PerformanceDetectionService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/architecture-analysis", response_model=ArchitectureAnalysisResponse)
+def get_architecture_analysis(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ArchitectureBugService = Depends(ArchitectureBugService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/prioritization", response_model=PrioritizationResponse)
+def get_bug_prioritization(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: BugPrioritizationService = Depends(BugPrioritizationService),
+):
+    return service.analyze(
         user_id=current_user.id, project_id=project_id
     )

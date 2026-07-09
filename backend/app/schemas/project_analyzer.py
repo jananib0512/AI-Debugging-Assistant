@@ -2375,6 +2375,12 @@ class SyntaxErrorInfo(BaseModel):
     ai_explanation: str
     suggested_fix: str
     error_type: str = "syntax"
+    function_name: str = ""
+
+
+class StaticCodeInfo(SyntaxErrorInfo):
+    error_type: str = "static"
+    function_name: str = ""
 
 
 class SyntaxDetectionResult(BaseModel):
@@ -2401,3 +2407,275 @@ class SyntaxDetectionResponse(BaseModel):
     low_count: int = 0
     results: list[SyntaxDetectionResult] = []
     scanned_languages: list[str] = []
+
+
+# ── Phase 4.2.2: Static Code Analysis ─────────────────────────────────────
+
+
+class StaticCodeAnalysisResult(BaseModel):
+    file_path: str
+    language: str
+    errors: list[StaticCodeInfo] = []
+    error_count: int = 0
+    health_score: float = 100.0
+
+
+class StaticCodeAnalysisResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str
+    language: str
+    status: str
+    summary: str
+    total_errors: int = 0
+    total_files_scanned: int = 0
+    files_with_errors: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    results: list[StaticCodeAnalysisResult] = []
+    scanned_languages: list[str] = []
+
+
+# ── Phase 4.2.3: Dependency Bug Detection ─────────────────────────────────
+
+
+class DependencyIssueInfo(StaticCodeInfo):
+    error_type: str = "dependency"
+    package_name: str = ""
+    current_version: str = ""
+    recommended_version: str = ""
+
+
+class DependencyAnalysisResult(BaseModel):
+    file_path: str
+    language: str
+    errors: list[DependencyIssueInfo] = []
+    error_count: int = 0
+    health_score: float = 100.0
+
+
+class DependencyAnalysisResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str
+    language: str
+    status: str
+    summary: str
+    total_errors: int = 0
+    total_files_scanned: int = 0
+    files_with_errors: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    results: list[DependencyAnalysisResult] = []
+    package_manager: str = ""
+    declared_packages: list[str] = []
+
+
+# ── Phase 4.2.4: Runtime Risk Detection ────────────────────────────────────
+
+
+class RuntimeIssueInfo(StaticCodeInfo):
+    error_type: str = "runtime"
+    function_name: str = ""
+    possible_impact: str = ""
+
+
+class RuntimeAnalysisResult(BaseModel):
+    file_path: str
+    language: str
+    errors: list[RuntimeIssueInfo] = []
+    error_count: int = 0
+    health_score: float = 100.0
+
+
+class RuntimeAnalysisResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str
+    language: str
+    status: str
+    summary: str
+    total_errors: int = 0
+    total_files_scanned: int = 0
+    files_with_errors: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    results: list[RuntimeAnalysisResult] = []
+    scanned_languages: list[str] = []
+
+
+# ── Phase 4.2.5: Security Bug Detection ────────────────────────────────────
+
+
+class SecurityIssueInfo(StaticCodeInfo):
+    error_type: str = "security"
+    security_category: str = ""
+    security_impact: str = ""
+    cwe_id: str = ""
+
+
+class SecurityAnalysisResult(BaseModel):
+    file_path: str
+    language: str
+    errors: list[SecurityIssueInfo] = []
+    error_count: int = 0
+    health_score: float = 100.0
+
+
+class SecurityAnalysisResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str
+    language: str
+    status: str
+    summary: str
+    total_errors: int = 0
+    total_files_scanned: int = 0
+    files_with_errors: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    results: list[SecurityAnalysisResult] = []
+    scanned_languages: list[str] = []
+    security_score: int = 100
+
+
+# ── Phase 4.2.6: Performance Bug Detection ─────────────────────────────────
+
+
+class PerformanceIssueInfo(StaticCodeInfo):
+    error_type: str = "performance"
+    performance_category: str = ""
+    estimated_cost: str = ""
+    function_name: str = ""
+
+
+class PerformanceAnalysisResult(BaseModel):
+    file_path: str
+    language: str
+    errors: list[PerformanceIssueInfo] = []
+    error_count: int = 0
+    health_score: float = 100.0
+
+
+class PerformanceAnalysisResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str
+    language: str
+    status: str
+    summary: str
+    total_errors: int = 0
+    total_files_scanned: int = 0
+    files_with_errors: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    results: list[PerformanceAnalysisResult] = []
+    scanned_languages: list[str] = []
+
+
+# ── Phase 4.2.7: Architecture & Logic Bug Detection ───────────────────────────
+
+
+class ArchitectureIssueInfo(BaseModel):
+    bug_title: str
+    description: str
+    severity: str
+    confidence: int = 0
+    language: str = ""
+    affected_file: str = ""
+    line_number: int = 0
+    column_number: int = 0
+    code_snippet: str = ""
+    ai_explanation: str = ""
+    suggested_fix: str = ""
+    error_type: str = ""
+    function_name: str = ""
+    architecture_category: str = ""
+    impact_scope: str = ""
+
+
+class ArchitectureAnalysisResult(BaseModel):
+    file_path: str
+    language: str
+    errors: list[ArchitectureIssueInfo] = []
+    error_count: int = 0
+    health_score: float = 100.0
+
+
+class ArchitectureAnalysisResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str
+    language: str
+    status: str
+    summary: str
+    total_errors: int = 0
+    total_files_scanned: int = 0
+    files_with_errors: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    results: list[ArchitectureAnalysisResult] = []
+    scanned_languages: list[str] = []
+
+
+# ── Phase 4.3: AI Bug Prioritization ────────────────────────────────────────
+
+
+class PrioritizedIssueInfo(BaseModel):
+    bug_title: str
+    description: str
+    severity: str
+    confidence: int = 0
+    language: str = ""
+    affected_file: str = ""
+    line_number: int = 0
+    column_number: int = 0
+    code_snippet: str = ""
+    ai_explanation: str = ""
+    suggested_fix: str = ""
+    error_type: str = ""
+    function_name: str = ""
+    source_engine: str = ""
+    priority_score: float = 0.0
+    cross_cutting_categories: list[str] = []
+    recommended_action: str = ""
+
+
+class PrioritizationFileGroup(BaseModel):
+    file_path: str
+    language: str
+    total_issues: int = 0
+    avg_priority: float = 0.0
+    max_severity: str = "Low"
+    issues: list[PrioritizedIssueInfo] = []
+
+
+class PrioritizationResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str
+    language: str
+    status: str
+    summary: str
+    total_issues: int = 0
+    total_files_affected: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    prioritized_issues: list[PrioritizedIssueInfo] = []
+    file_groups: list[PrioritizationFileGroup] = []
+    ai_recommendations: list[str] = []
+    analyzed_at: datetime

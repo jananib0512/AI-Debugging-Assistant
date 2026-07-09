@@ -1,42 +1,54 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
   Bug,
   CheckCircle,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Clock,
-  Eye,
-  EyeOff,
+  FileCode,
   Play,
   RefreshCw,
+  Search,
+  X,
 } from "lucide-react";
-import { getBugDetectionWorkspace } from "@/lib/project-analyzer";
-import type { BugDetectionWorkspaceResponse } from "@/types/project-analyzer";
+import { getBugDetectionWorkspace, getSyntaxDetection, getStaticCodeAnalysis, getDependencyAnalysis, getRuntimeAnalysis, getSecurityAnalysis, getPerformanceAnalysis, getArchitectureAnalysis, getBugPrioritization } from "@/lib/project-analyzer";
+import type { BugDetectionWorkspaceResponse, SyntaxDetectionResponse, StaticCodeAnalysisResponse, DependencyAnalysisResponse, RuntimeAnalysisResponse, SecurityAnalysisResponse, PerformanceAnalysisResponse, ArchitectureAnalysisResponse, PrioritizationResponse, SyntaxErrorInfo } from "@/types/project-analyzer";
 import { Card, CardContent } from "@/components/ui/card";
 
-const moduleDisplayNames: Record<string, string> = {
-  "Syntax Detection": "Syntax Errors",
-  "Static Code Analysis": "Code Quality",
-  "Dependency Analysis": "Dependencies",
-  "Runtime Risk Detection": "Runtime Issues",
-  "Security Detection": "Security",
-  "Performance Detection": "Performance",
-  "Architecture & Logic Detection": "Architecture",
-  "AI Bug Prioritization": "AI Prioritization",
+const SEVERITY_ORDER: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+
+const severityBadge = (s: string) => {
+  switch (s) {
+    case "Critical": return "text-white bg-[#DC2626]";
+    case "High": return "text-white bg-[#EA580C]";
+    case "Medium": return "text-[#111827] bg-[#F59E0B]";
+    default: return "text-[#111827] bg-[#F3F4F6]";
+  }
 };
 
-const detectionStages = [
-  "Scanning source files for syntax errors...",
-  "Analyzing code structure and quality...",
-  "Checking dependencies for conflicts...",
-  "Inspecting runtime behavior patterns...",
-  "Scanning for security vulnerabilities...",
-  "Evaluating performance bottlenecks...",
-  "Reviewing architecture and logic...",
-  "Prioritizing detected issues...",
+interface BugCategory {
+  id: string;
+  name: string;
+  status: "completed" | "pending";
+  bugs: SyntaxErrorInfo[];
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  total: number;
+}
+
+const PENDING_MODULES: Omit<BugCategory, "bugs">[] = [
+  { id: "dependency", name: "Dependency Issues", status: "pending", critical: 0, high: 0, medium: 0, low: 0, total: 0 },
+  { id: "runtime", name: "Runtime Issues", status: "pending", critical: 0, high: 0, medium: 0, low: 0, total: 0 },
+  { id: "security", name: "Security Issues", status: "pending", critical: 0, high: 0, medium: 0, low: 0, total: 0 },
+  { id: "performance", name: "Performance Issues", status: "pending", critical: 0, high: 0, medium: 0, low: 0, total: 0 },
+  { id: "architecture", name: "Architecture & Logic Issues", status: "pending", critical: 0, high: 0, medium: 0, low: 0, total: 0 },
 ];
 
 type DetectionState = "idle" | "running" | "completed";
@@ -44,89 +56,292 @@ type DetectionState = "idle" | "running" | "completed";
 export function BugDetectionWorkspace() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState<BugDetectionWorkspaceResponse | null>(null);
+  const [wsData, setWsData] = useState<BugDetectionWorkspaceResponse | null>(null);
+  const [syntaxData, setSyntaxData] = useState<SyntaxDetectionResponse | null>(null);
+  const [staticData, setStaticData] = useState<StaticCodeAnalysisResponse | null>(null);
+  const [dependencyData, setDependencyData] = useState<DependencyAnalysisResponse | null>(null);
+  const [runtimeData, setRuntimeData] = useState<RuntimeAnalysisResponse | null>(null);
+  const [securityData, setSecurityData] = useState<SecurityAnalysisResponse | null>(null);
+  const [performanceData, setPerformanceData] = useState<PerformanceAnalysisResponse | null>(null);
+  const [architectureData, setArchitectureData] = useState<ArchitectureAnalysisResponse | null>(null);
+  const [prioritizationData, setPrioritizationData] = useState<PrioritizationResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detectionState, setDetectionState] = useState<DetectionState>("idle");
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(0);
-  const [moduleStatuses, setModuleStatuses] = useState<Record<string, string>>({});
-  const [showDetails, setShowDetails] = useState(false);
+  const [search, setSearch] = useState("");
+  const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [showAllCategory, setShowAllCategory] = useState<string | null>(null);
+  const [selectedBug, setSelectedBug] = useState<SyntaxErrorInfo | null>(null);
   const fetchedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const syntaxFetchedRef = useRef(false);
+  const staticFetchedRef = useRef(false);
+  const dependencyFetchedRef = useRef(false);
+  const runtimeFetchedRef = useRef(false);
+  const securityFetchedRef = useRef(false);
+  const performanceFetchedRef = useRef(false);
+  const architectureFetchedRef = useRef(false);
+  const prioritizationFetchedRef = useRef(false);
 
-  const fetchData = useCallback(() => {
+  const fetchWsData = useCallback(() => {
     if (!projectId) return;
     setLoading(true);
     setError(null);
     getBugDetectionWorkspace(Number(projectId))
-      .then((res) => {
-        setData(res);
-        fetchedRef.current = true;
-      })
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : "Failed to load workspace";
-        setError(msg);
-      })
+      .then((res) => { setWsData(res); fetchedRef.current = true; })
+      .catch((err: unknown) => { setError(err instanceof Error ? err.message : "Failed to load workspace"); })
       .finally(() => setLoading(false));
   }, [projectId]);
 
   useEffect(() => {
-    if (projectId && !fetchedRef.current) fetchData();
-  }, [projectId, fetchData]);
+    if (projectId && !fetchedRef.current) fetchWsData();
+  }, [projectId, fetchWsData]);
+
+  const fetchSyntaxData = useCallback(() => {
+    if (!projectId || syntaxFetchedRef.current) return;
+    getSyntaxDetection(Number(projectId))
+      .then((res) => { setSyntaxData(res); syntaxFetchedRef.current = true; })
+      .catch(() => {});
+  }, [projectId]);
+
+  const fetchStaticData = useCallback(() => {
+    if (!projectId || staticFetchedRef.current) return;
+    getStaticCodeAnalysis(Number(projectId))
+      .then((res) => { setStaticData(res); staticFetchedRef.current = true; })
+      .catch(() => {});
+  }, [projectId]);
+
+  const fetchDependencyData = useCallback(() => {
+    if (!projectId || dependencyFetchedRef.current) return;
+    getDependencyAnalysis(Number(projectId))
+      .then((res) => { setDependencyData(res); dependencyFetchedRef.current = true; })
+      .catch(() => {});
+  }, [projectId]);
+
+  const fetchRuntimeData = useCallback(() => {
+    if (!projectId || runtimeFetchedRef.current) return;
+    getRuntimeAnalysis(Number(projectId))
+      .then((res) => { setRuntimeData(res); runtimeFetchedRef.current = true; })
+      .catch(() => {});
+  }, [projectId]);
+
+  const fetchSecurityData = useCallback(() => {
+    if (!projectId || securityFetchedRef.current) return;
+    getSecurityAnalysis(Number(projectId))
+      .then((res) => { setSecurityData(res); securityFetchedRef.current = true; })
+      .catch(() => {});
+  }, [projectId]);
+
+  const fetchPerformanceData = useCallback(() => {
+    if (!projectId || performanceFetchedRef.current) return;
+    getPerformanceAnalysis(Number(projectId))
+      .then((res) => { setPerformanceData(res); performanceFetchedRef.current = true; })
+      .catch(() => {});
+  }, [projectId]);
+
+  const fetchArchitectureData = useCallback(() => {
+    if (!projectId || architectureFetchedRef.current) return;
+    getArchitectureAnalysis(Number(projectId))
+      .then((res) => { setArchitectureData(res); architectureFetchedRef.current = true; })
+      .catch(() => {});
+  }, [projectId]);
+
+  const fetchPrioritizationData = useCallback(() => {
+    if (!projectId || prioritizationFetchedRef.current) return;
+    getBugPrioritization(Number(projectId))
+      .then((res) => { setPrioritizationData(res); prioritizationFetchedRef.current = true; })
+      .catch(() => {});
+  }, [projectId]);
+
+  useEffect(() => {
+    if (detectionState === "completed") {
+      if (!syntaxFetchedRef.current) fetchSyntaxData();
+      if (!staticFetchedRef.current) fetchStaticData();
+      if (!dependencyFetchedRef.current) fetchDependencyData();
+      if (!runtimeFetchedRef.current) fetchRuntimeData();
+      if (!securityFetchedRef.current) fetchSecurityData();
+      if (!performanceFetchedRef.current) fetchPerformanceData();
+      if (!architectureFetchedRef.current) fetchArchitectureData();
+      if (!prioritizationFetchedRef.current) fetchPrioritizationData();
+    }
+  }, [detectionState, fetchSyntaxData, fetchStaticData, fetchDependencyData, fetchRuntimeData, fetchSecurityData, fetchPerformanceData, fetchArchitectureData, fetchPrioritizationData]);
 
   useEffect(() => {
     if (detectionState !== "running") return;
-    const moduleKeys = data?.detection_modules.map((m) => m.name) ?? [];
+    const moduleKeys = wsData?.detection_modules.map((m) => m.name) ?? [];
     let currentIdx = 0;
-    const statuses: Record<string, string> = {};
-    moduleKeys.forEach((k) => { statuses[k] = "ready"; });
-    setModuleStatuses({ ...statuses });
-
     timerRef.current = setInterval(() => {
       if (currentIdx >= moduleKeys.length) {
         if (timerRef.current) clearInterval(timerRef.current);
         setDetectionState("completed");
         setProgress(100);
         setCurrentStage(moduleKeys.length - 1);
-        const final: Record<string, string> = {};
-        moduleKeys.forEach((k) => { final[k] = "completed"; });
-        setModuleStatuses(final);
         return;
       }
-      const key = moduleKeys[currentIdx]!;
-      statuses[key] = "running";
-      setModuleStatuses({ ...statuses });
       setCurrentStage(currentIdx);
       setProgress(Math.round((currentIdx / moduleKeys.length) * 100));
-
       let elapsed = 0;
+      const idx = currentIdx;
       const moduleTimer = setInterval(() => {
         elapsed += 100;
         if (elapsed >= 1400) {
           clearInterval(moduleTimer);
-          statuses[key] = "completed";
-          setModuleStatuses({ ...statuses });
-          setProgress(Math.round(((currentIdx + 1) / moduleKeys.length) * 100));
+          setProgress(Math.round(((idx + 1) / moduleKeys.length) * 100));
           currentIdx++;
         }
       }, 100);
     }, 1600);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [detectionState, data]);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [detectionState, wsData]);
 
   const startDetection = () => {
     setDetectionState("running");
     setProgress(0);
     setCurrentStage(0);
-    setShowDetails(false);
+    setSelectedBug(null);
   };
 
-  const displayName = (backendName: string): string =>
-    moduleDisplayNames[backendName] ?? backendName;
+  // ── Build categories from data ──
+
+  const categories = useMemo((): BugCategory[] => {
+    const cats: BugCategory[] = [];
+    const syntaxBugs = syntaxData?.results.flatMap((r) => r.errors) ?? [];
+    const staticBugs = staticData?.results.flatMap((r) => r.errors) ?? [];
+    const dependencyBugs = dependencyData?.results.flatMap((r) => r.errors) ?? [];
+    const runtimeBugs = runtimeData?.results.flatMap((r) => r.errors) ?? [];
+    const securityBugs = securityData?.results.flatMap((r) => r.errors) ?? [];
+    const performanceBugs = performanceData?.results.flatMap((r) => r.errors) ?? [];
+    const architectureBugs = architectureData?.results.flatMap((r) => r.errors) ?? [];
+
+    const sevCounts = (bugs: SyntaxErrorInfo[]) => ({
+      critical: bugs.filter((b) => b.severity === "Critical").length,
+      high: bugs.filter((b) => b.severity === "High").length,
+      medium: bugs.filter((b) => b.severity === "Medium").length,
+      low: bugs.filter((b) => b.severity === "Low").length,
+    });
+
+    const sc = sevCounts(syntaxBugs);
+    cats.push({
+      id: "syntax",
+      name: "Syntax Errors",
+      status: "completed",
+      bugs: syntaxBugs,
+      total: syntaxBugs.length,
+      ...sc,
+    });
+
+    const stc = sevCounts(staticBugs);
+    cats.push({
+      id: "static",
+      name: "Static Code Issues",
+      status: "completed",
+      bugs: staticBugs,
+      total: staticBugs.length,
+      ...stc,
+    });
+
+    const dc = sevCounts(dependencyBugs);
+    cats.push({
+      id: "dependency",
+      name: "Dependency Issues",
+      status: "completed",
+      bugs: dependencyBugs,
+      total: dependencyBugs.length,
+      ...dc,
+    });
+
+    const rc = sevCounts(runtimeBugs);
+    cats.push({
+      id: "runtime",
+      name: "Runtime Risks",
+      status: "completed",
+      bugs: runtimeBugs,
+      total: runtimeBugs.length,
+      ...rc,
+    });
+
+    const sec = sevCounts(securityBugs);
+    cats.push({
+      id: "security",
+      name: "Security Issues",
+      status: "completed",
+      bugs: securityBugs,
+      total: securityBugs.length,
+      ...sec,
+    });
+
+    const pc = sevCounts(performanceBugs);
+    cats.push({
+      id: "performance",
+      name: "Performance Issues",
+      status: "completed",
+      bugs: performanceBugs,
+      total: performanceBugs.length,
+      ...pc,
+    });
+
+    const ac = sevCounts(architectureBugs);
+    cats.push({
+      id: "architecture",
+      name: "Architecture & Logic Issues",
+      status: "completed",
+      bugs: architectureBugs,
+      total: architectureBugs.length,
+      ...ac,
+    });
+
+    for (const m of PENDING_MODULES) {
+      if (m.id === "dependency" || m.id === "runtime" || m.id === "security" || m.id === "performance" || m.id === "architecture") continue;
+      cats.push({ ...m, bugs: [] });
+    }
+
+    return cats;
+  }, [syntaxData, staticData, dependencyData, runtimeData, securityData, performanceData, architectureData]);
+
+  const totalCritical = useMemo(() => categories.reduce((s, c) => s + c.critical, 0), [categories]);
+  const totalHigh = useMemo(() => categories.reduce((s, c) => s + c.high, 0), [categories]);
+  const totalMedium = useMemo(() => categories.reduce((s, c) => s + c.medium, 0), [categories]);
+  const totalLow = useMemo(() => categories.reduce((s, c) => s + c.low, 0), [categories]);
+  const totalBugs = useMemo(() => categories.reduce((s, c) => s + c.total, 0), [categories]);
+
+  // ── Search + Filter ──
+
+  const allBugs = useMemo(() => categories.flatMap((c) => c.bugs), [categories]);
+
+  const filteredBugs = useMemo(() => {
+    let bugs = [...allBugs];
+    if (search) {
+      const q = search.toLowerCase();
+      bugs = bugs.filter(
+        (b) =>
+          b.bug_title.toLowerCase().includes(q) ||
+          b.affected_file.toLowerCase().includes(q) ||
+          b.language.toLowerCase().includes(q) ||
+          b.severity.toLowerCase().includes(q) ||
+          b.description.toLowerCase().includes(q) ||
+          ("package_name" in b && (b as any).package_name?.toLowerCase().includes(q)),
+      );
+    }
+    if (severityFilter !== "all") bugs = bugs.filter((b) => b.severity === severityFilter);
+    if (categoryFilter !== "all") {
+      const cat = categories.find((c) => c.id === categoryFilter);
+      if (cat) {
+        const catBugs = new Set(cat.bugs);
+        bugs = bugs.filter((b) => catBugs.has(b));
+      }
+    }
+    bugs.sort((a, b) => (SEVERITY_ORDER[b.severity] ?? 0) - (SEVERITY_ORDER[a.severity] ?? 0));
+    return bugs;
+  }, [allBugs, search, severityFilter, categoryFilter, categories]);
+
+  const hasFilters = search || severityFilter !== "all" || categoryFilter !== "all";
+  const isCompleted = detectionState === "completed";
+
+  // ── Render ──
 
   if (loading) {
     return (
@@ -146,17 +361,14 @@ export function BugDetectionWorkspace() {
         <AlertTriangle className="mb-3 h-8 w-8 text-[#DC2626]" />
         <p className="text-sm font-medium text-[#111827]">Unable to load workspace</p>
         <p className="mt-1 text-xs text-[#6B7280]">{error}</p>
-        <button
-          onClick={fetchData}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-[#E5E7EB] bg-white px-4 py-2 text-xs font-medium text-[#374151] hover:bg-[#F9FAFB]"
-        >
+        <button onClick={fetchWsData} className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-[#E5E7EB] bg-white px-4 py-2 text-xs font-medium text-[#374151] hover:bg-[#F9FAFB]">
           <RefreshCw className="h-3.5 w-3.5" /> Retry
         </button>
       </div>
     );
   }
 
-  if (!data) {
+  if (!wsData) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Bug className="mb-3 h-8 w-8 text-[#9CA3AF]" />
@@ -167,7 +379,7 @@ export function BugDetectionWorkspace() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-4xl space-y-8">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-5xl space-y-8">
 
       {/* ── Header ── */}
       <div className="text-center">
@@ -181,209 +393,405 @@ export function BugDetectionWorkspace() {
       <section>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#9CA3AF]">Project Summary</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Project Name</p>
-              <p className="mt-1 text-sm font-semibold text-[#111827]">{data.project_name || "—"}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Project Type</p>
-              <p className="mt-1 text-sm font-semibold text-[#111827]">{data.project_type || "—"}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Language</p>
-              <p className="mt-1 text-sm font-semibold text-[#111827]">{data.language || "—"}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Total Files</p>
-              <p className="mt-1 text-sm font-semibold text-[#111827]">{data.total_files}</p>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Project Name</p>
+            <p className="mt-1 text-sm font-semibold text-[#111827]">{wsData.project_name || "—"}</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Project Type</p>
+            <p className="mt-1 text-sm font-semibold text-[#111827]">{wsData.project_type || "—"}</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Language</p>
+            <p className="mt-1 text-sm font-semibold text-[#111827]">{wsData.language || "—"}</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Total Files</p>
+            <p className="mt-1 text-sm font-semibold text-[#111827]">{wsData.total_files}</p>
+          </CardContent></Card>
         </div>
       </section>
 
-      {/* ── Detection Status ── */}
-      {detectionState !== "idle" && (
+      {/* ── Detection Progress ── */}
+      {!isCompleted && (
         <section>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#9CA3AF]">Detection Status</p>
-          <Card hover={false}>
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {detectionState === "running" ? (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EFF6FF]">
-                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#2563EB]" />
-                    </div>
-                  ) : (
-                    <CheckCircle className="h-5 w-5 text-[#059669]" />
-                  )}
-                  <div>
-                    <p className="text-sm font-semibold text-[#111827]">
-                      {detectionState === "running" ? "Running" : "Completed"}
-                    </p>
-                    <p className="text-xs text-[#6B7280]">
-                      {detectionState === "running"
-                        ? detectionStages[currentStage] ?? "Processing..."
-                        : "All modules have finished inspecting your project."}
-                    </p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#9CA3AF]">Detection Progress</p>
+          {detectionState === "idle" && (
+            <Card hover={false}>
+              <CardContent className="p-5 text-center">
+                <p className="text-sm text-[#6B7280]">Click "Start AI Bug Detection" to begin inspecting your project.</p>
+              </CardContent>
+            </Card>
+          )}
+          {detectionState === "running" && (
+            <Card hover={false}>
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EFF6FF]">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#2563EB]" />
                   </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-[#111827]">Running Detection</p>
+                    <p className="text-xs text-[#6B7280]">{detectionStages[currentStage] ?? "Processing..."}</p>
+                  </div>
+                  <span className="text-xs font-medium text-[#2563EB]">{Math.round(progress)}%</span>
                 </div>
-                {detectionState === "completed" && (
-                  <span className="flex items-center gap-1 rounded-full bg-[#ECFDF5] px-3 py-1 text-xs font-semibold text-[#059669]">
-                    <CheckCircle className="h-3.5 w-3.5" /> Complete
-                  </span>
-                )}
-              </div>
-              {detectionState === "running" && (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-xs text-[#6B7280]">
-                    <span>{Math.round(progress)}%</span>
-                    <span>{currentStage + 1} of {data.detection_modules.length} modules</span>
-                  </div>
-                  <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-[#F3F4F6]">
-                    <motion.div
-                      className="h-full rounded-full bg-[#2563EB] transition-all duration-300"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                    />
-                  </div>
+                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[#F3F4F6]">
+                  <motion.div className="h-full rounded-full bg-[#2563EB]" initial={{ width: 0 }} animate={{ width: `${progress}%` }} />
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-      )}
-
-      {/* ── Bug Detection Modules ── */}
-      <section>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#9CA3AF]">Detection Modules</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {data.detection_modules.map((mod) => {
-            const status =
-              detectionState === "idle"
-                ? "ready"
-                : moduleStatuses[mod.name] ?? "ready";
-            return (
-              <Card key={mod.name}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-[#111827]">{displayName(mod.name)}</p>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        status === "completed"
-                          ? "bg-[#ECFDF5] text-[#059669]"
-                          : status === "running"
-                            ? "bg-[#EFF6FF] text-[#2563EB]"
-                            : "bg-[#F3F4F6] text-[#6B7280]"
-                      }`}
-                    >
-                      {status === "completed" && <CheckCircle className="h-2.5 w-2.5" />}
-                      {status === "running" && (
-                        <span className="h-2 w-2 animate-pulse rounded-full bg-[#2563EB]" />
-                      )}
-                      {status === "ready" && <Clock className="h-2.5 w-2.5" />}
-                      {status === "completed"
-                        ? "Completed"
-                        : status === "running"
-                          ? "Running"
-                          : "Ready"}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── AI Summary ── */}
-      <section>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#9CA3AF]">AI Summary</p>
-        <Card hover={false}>
-          <CardContent className="p-5">
-            <p className="text-sm leading-relaxed text-[#374151]">
-              {detectionState === "idle" &&
-                "Your project is ready. The AI Software Engineer will now inspect your project. No bugs have been analyzed yet."}
-              {detectionState === "running" &&
-                "The AI Software Engineer is inspecting your project. Detection modules are running and results will be available shortly."}
-              {detectionState === "completed" &&
-                "The AI Software Engineer has completed inspecting your project. All detection modules have finished. You can now review the results and continue to root cause analysis."}
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* ── View Details (after completion) ── */}
-      {detectionState === "completed" && (
-        <section>
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
-          >
-            {showDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {showDetails ? "Hide Details" : "View Details"}
-          </button>
-          {showDetails && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-3 overflow-hidden rounded-lg border border-[#E5E7EB]"
-            >
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="bg-[#F9FAFB] text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">
-                    <th className="px-4 py-3">File</th>
-                    <th className="px-4 py-3">Bug</th>
-                    <th className="px-4 py-3">Severity</th>
-                    <th className="px-4 py-3">Explanation</th>
-                    <th className="px-4 py-3">Suggested Fix</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-xs text-[#6B7280]">
-                      No issues detected. Your project looks clean.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </motion.div>
+              </CardContent>
+            </Card>
           )}
         </section>
       )}
 
-      {/* ── Primary Button ── */}
-      <div className="text-center">
-        {detectionState === "idle" && (
+      {/* ── Bug Overview (after completion) ── */}
+      {isCompleted && (
+        <>
+          {/* AI Summary */}
+          <Card hover={false}>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1">AI Summary</p>
+                  <p className="text-sm leading-relaxed text-[#374151]">
+                    {totalBugs === 0
+                      ? "No issues detected. Your project looks clean."
+                      : `${totalBugs} ${totalBugs === 1 ? "issue" : "issues"} detected.`
+                    }
+                    {totalCritical > 0 && ` ${totalCritical} Critical.`}
+                    {totalHigh > 0 && ` ${totalHigh} High.`}
+                    {totalMedium > 0 && ` ${totalMedium} Medium.`}
+                    {totalLow > 0 && ` ${totalLow} Low.`}
+                    {dependencyData && dependencyData.total_errors > 0 && ` ${dependencyData.total_errors} dependency issue${dependencyData.total_errors > 1 ? 's' : ''} detected.`}
+                    {dependencyData?.package_manager && ` Package manager: ${dependencyData.package_manager}.`}
+                    {runtimeData && runtimeData.total_errors > 0 && ` ${runtimeData.total_errors} runtime risk${runtimeData.total_errors > 1 ? 's' : ''} detected.`}
+                    {securityData && securityData.total_errors > 0 && ` ${securityData.total_errors} security issue${securityData.total_errors > 1 ? 's' : ''} detected.`}
+                    {securityData?.security_score !== undefined && securityData.security_score < 100 ? ` Security score: ${securityData.security_score}/100.` : ''}
+                    {performanceData && performanceData.total_errors > 0 && ` ${performanceData.total_errors} performance issue${performanceData.total_errors > 1 ? 's' : ''} detected.`}
+                    {architectureData && architectureData.total_errors > 0 && ` ${architectureData.total_errors} architecture issue${architectureData.total_errors > 1 ? 's' : ''} detected.`}
+                    {totalBugs > 0 && " The project may need attention before proceeding."}
+                    {totalBugs > 0 && " The AI Software Engineer recommends reviewing all issues and continuing to Root Cause Analysis."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0 ml-6">
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-[#111827]">{syntaxData?.total_files_scanned ?? wsData.total_files}</p>
+                    <p className="text-[10px] text-[#6B7280]">Files Scanned</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-[#111827]">{totalBugs}</p>
+                    <p className="text-[10px] text-[#6B7280]">Issues Found</p>
+                  </div>
+                </div>
+              </div>
+              {totalBugs > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {totalCritical > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#FEF2F2] px-3 py-1 text-xs font-medium text-[#DC2626]"><span className="h-2 w-2 rounded-full bg-[#DC2626]" /> {totalCritical} Critical</span>}
+                  {totalHigh > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#FFF7ED] px-3 py-1 text-xs font-medium text-[#EA580C]"><span className="h-2 w-2 rounded-full bg-[#EA580C]" /> {totalHigh} High</span>}
+                  {totalMedium > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#FFFBEB] px-3 py-1 text-xs font-medium text-[#D97706]"><span className="h-2 w-2 rounded-full bg-[#F59E0B]" /> {totalMedium} Medium</span>}
+                  {totalLow > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#F3F4F6] px-3 py-1 text-xs font-medium text-[#6B7280]"><span className="h-2 w-2 rounded-full bg-[#9CA3AF]" /> {totalLow} Low</span>}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── AI Bug Prioritization ── */}
+          {prioritizationData && prioritizationData.total_issues > 0 && (
+            <Card hover={false}>
+              <CardContent className="p-5">
+                <div className="mb-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1">AI Bug Prioritization</p>
+                  <p className="text-sm text-[#374151]">{prioritizationData.summary}</p>
+                </div>
+
+                {prioritizationData.ai_recommendations.length > 0 && (
+                  <div className="mb-4 rounded-lg bg-[#EFF6FF] p-3">
+                    <p className="text-xs font-semibold text-[#2563EB] mb-1.5">AI Recommendations</p>
+                    <ul className="space-y-1">
+                      {prioritizationData.ai_recommendations.map((r, i) => (
+                        <li key={i} className="flex gap-2 text-xs text-[#374151]">
+                          <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2563EB]" />
+                          {r}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-[#E5E7EB]">
+                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">Priority</th>
+                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">Issue</th>
+                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">File</th>
+                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">Severity</th>
+                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">Engine</th>
+                        <th className="py-2 text-left font-medium text-[#6B7280]">Categories</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {prioritizationData.prioritized_issues.slice(0, 20).map((issue, i) => (
+                        <tr key={i} className="border-b border-[#F9FAFB] hover:bg-[#F9FAFB]">
+                          <td className="py-2 pr-3 text-[#111827] font-medium">{i + 1}</td>
+                          <td className="py-2 pr-3 text-[#111827] max-w-[200px] truncate">{issue.bug_title}</td>
+                          <td className="py-2 pr-3 text-[#6B7280] max-w-[150px] truncate">{issue.affected_file}</td>
+                          <td className="py-2 pr-3">
+                            <span className={"inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium " + (
+                              issue.severity === "Critical" ? "bg-[#FEF2F2] text-[#DC2626]" :
+                              issue.severity === "High" ? "bg-[#FFF7ED] text-[#EA580C]" :
+                              issue.severity === "Medium" ? "bg-[#FFFBEB] text-[#D97706]" :
+                              "bg-[#F3F4F6] text-[#6B7280]"
+                            )}>{issue.severity}</span>
+                          </td>
+                          <td className="py-2 pr-3 text-[#6B7280]">{issue.source_engine}</td>
+                          <td className="py-2 text-[#6B7280]">
+                            {issue.cross_cutting_categories && issue.cross_cutting_categories.length > 0
+                              ? issue.cross_cutting_categories.slice(0, 2).join(", ") + (issue.cross_cutting_categories.length > 2 ? "..." : "")
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {prioritizationData.total_issues > 20 && (
+                    <p className="mt-2 text-[10px] text-[#9CA3AF]">Showing 20 of {prioritizationData.total_issues} issues</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Search + Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[220px] flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+              <input
+                type="text"
+                placeholder="Search by bug, file, language, severity..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-lg border border-[#E5E7EB] bg-white py-2 pl-9 pr-8 text-xs text-[#111827] placeholder-[#9CA3AF] outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280]">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <select value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value)} className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-xs text-[#374151] outline-none focus:border-[#2563EB]">
+              <option value="all">All Severities</option>
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-xs text-[#374151] outline-none focus:border-[#2563EB]">
+              <option value="all">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* ── Category Cards ── */}
+          <div className="space-y-4">
+            {categories.map((cat) => {
+              const isExpanded = expandedCategory === cat.id;
+              const showAll = showAllCategory === cat.id;
+              const bugsForCat = catFilteredBugs(cat, filteredBugs);
+              const visibleBugs = showAll ? bugsForCat : bugsForCat.slice(0, 5);
+
+              // Skip empty pending categories when no filters active
+              if (cat.status === "pending" && cat.total === 0 && !hasFilters && !isExpanded) return null;
+
+              return (
+                <Card key={cat.id}>
+                  <CardContent className="p-0">
+                    {/* Header Row */}
+                    <button
+                      onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
+                      className="flex w-full items-center justify-between p-4 hover:bg-[#F9FAFB] transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${cat.status === "completed" ? "bg-[#ECFDF5]" : "bg-[#F3F4F6]"}`}>
+                          {cat.status === "completed" ? (
+                            <CheckCircle className="h-4 w-4 text-[#059669]" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-[#9CA3AF]" />
+                          )}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-semibold text-[#111827]">{cat.name}</p>
+                          <p className="text-xs text-[#6B7280]">
+                            {cat.status === "completed"
+                              ? `${cat.total} ${cat.total === 1 ? "bug" : "bugs"} detected`
+                              : "Not yet analyzed"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {cat.total > 0 && (
+                          <div className="hidden items-center gap-2 sm:flex">
+                            {cat.critical > 0 && <span className="rounded-full bg-[#FEF2F2] px-2 py-0.5 text-[10px] font-medium text-[#DC2626]">{cat.critical} Critical</span>}
+                            {cat.high > 0 && <span className="rounded-full bg-[#FFF7ED] px-2 py-0.5 text-[10px] font-medium text-[#EA580C]">{cat.high} High</span>}
+                            {cat.medium > 0 && <span className="rounded-full bg-[#FFFBEB] px-2 py-0.5 text-[10px] font-medium text-[#D97706]">{cat.medium} Medium</span>}
+                          </div>
+                        )}
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${cat.status === "completed" ? "bg-[#ECFDF5] text-[#059669]" : "bg-[#F3F4F6] text-[#6B7280]"}`}>
+                          {cat.status === "completed" ? "Completed" : "Pending"}
+                        </span>
+                        {isExpanded ? <ChevronUp className="h-4 w-4 text-[#9CA3AF]" /> : <ChevronDown className="h-4 w-4 text-[#9CA3AF]" />}
+                      </div>
+                    </button>
+
+                    {/* Expanded Bugs */}
+                    {isExpanded && (
+                      <div className="border-t border-[#E5E7EB] px-4 pb-4">
+                        {bugsForCat.length === 0 ? (
+                          <p className="py-4 text-center text-xs text-[#6B7280]">
+                            {cat.status === "pending"
+                              ? "This module has not been analyzed yet."
+                              : "No issues detected in this category."}
+                          </p>
+                        ) : (
+                          <>
+                            {/* Table Header */}
+                            <div className="hidden border-b border-[#E5E7EB] py-2 text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF] sm:grid sm:grid-cols-[100px_1fr_1fr_60px_100px]">
+                              <span>Severity</span>
+                              <span>Bug</span>
+                              <span>File</span>
+                              <span>Line</span>
+                              <span className="text-right">Action</span>
+                            </div>
+
+                            {visibleBugs.map((bug, idx) => {
+                              const isSelected = selectedBug === bug;
+                              return (
+                                <div key={`${bug.affected_file}-${bug.line_number}-${bug.column_number}-${idx}`}>
+                                  <div className="grid gap-2 border-b border-[#E5E7EB] py-3 sm:grid-cols-[100px_1fr_1fr_60px_100px] sm:items-center">
+                                    <span className={`inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${severityBadge(bug.severity)}`}>
+                                      {bug.severity}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-medium text-[#111827]">{bug.bug_title}</p>
+                                      <p className="text-[10px] text-[#6B7280] truncate">{bug.description}</p>
+                                    </div>
+                                    <span className="inline-flex items-center gap-1 text-xs text-[#6B7280]">
+                                      <FileCode className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">{bug.affected_file}</span>
+                                    </span>
+                                    <span className="text-xs text-[#6B7280]">{bug.line_number}:{bug.column_number}</span>
+                                    <div className="text-right">
+                                      <button
+                                        onClick={() => setSelectedBug(isSelected ? null : bug)}
+                                        className="rounded-md border border-[#E5E7EB] bg-white px-3 py-1.5 text-[10px] font-medium text-[#2563EB] hover:bg-[#EFF6FF] transition-colors"
+                                      >
+                                        {isSelected ? "Close" : "View Details"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  {/* Detail */}
+                                  {isSelected && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="border-b border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                        {bug.language && <span className="text-xs text-[#6B7280]">{bug.language}</span>}
+                                        {bug.function_name && <span className="text-xs text-[#2563EB]">in {bug.function_name}()</span>}
+                                        {"package_name" in bug && (bug as any).package_name && (
+                                          <>
+                                            <span className="text-xs text-[#D1D5DB]">·</span>
+                                            <span className="text-xs font-medium text-[#059669]">{(bug as any).package_name}</span>
+                                            {(bug as any).current_version && <span className="text-xs text-[#6B7280]">v{(bug as any).current_version}</span>}
+                                            {(bug as any).recommended_version && <span className="text-xs text-[#2563EB]">→ v{(bug as any).recommended_version}</span>}
+                                          </>
+                                        )}
+                                        <span className="text-xs text-[#D1D5DB]">·</span>
+                                        <span className="text-xs text-[#6B7280]">Confidence: {bug.confidence}%</span>
+                                        <span className="text-xs text-[#D1D5DB]">·</span>
+                                        <span className="text-xs text-[#6B7280]">Status: Unresolved</span>
+                                      </div>
+                                      <div className="grid gap-3 md:grid-cols-2">
+                                        <div>
+                                          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1">AI Explanation</p>
+                                          <div className="rounded-lg bg-white p-3 border border-[#E5E7EB]">
+                                            <p className="text-xs leading-relaxed text-[#374151]">{bug.ai_explanation}</p>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1">Suggested Fix</p>
+                                          <div className="rounded-lg bg-[#EFF6FF] p-3 border border-[#BFDBFE]">
+                                            <p className="text-xs leading-relaxed text-[#2563EB]">{bug.suggested_fix}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      {bug.code_snippet && (
+                                        <div className="mt-3">
+                                          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1">Source Code</p>
+                                          <pre className="overflow-x-auto rounded-lg bg-[#111827] p-3 text-xs leading-relaxed text-[#E5E7EB]">
+                                            <code>{bug.code_snippet}</code>
+                                          </pre>
+                                        </div>
+                                      )}
+                                    </motion.div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* Show More / Show Less */}
+                        {bugsForCat.length > 5 && (
+                          <button
+                            onClick={() => setShowAllCategory(showAll ? null : cat.id)}
+                            className="mt-2 text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
+                          >
+                            {showAll ? "Show Less" : `Show More (${bugsForCat.length - 5} more)`}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* ── Primary Button ── */}
+          <div className="text-center">
+            <button
+              onClick={() => navigate(`/projects/${projectId}/analyzer`)}
+              className="inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-6 py-3 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
+            >
+              Continue to Root Cause Analysis
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ── Start Button (idle) ── */}
+      {detectionState === "idle" && (
+        <div className="text-center">
           <button
             onClick={startDetection}
             className="inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-6 py-3 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
           >
             <Play className="h-4 w-4" /> Start AI Bug Detection
           </button>
-        )}
-        {detectionState === "running" && (
+        </div>
+      )}
+
+      {/* ── Running State ── */}
+      {detectionState === "running" && (
+        <div className="text-center">
           <div className="inline-flex items-center gap-2 rounded-lg bg-[#EFF6FF] px-6 py-3 text-sm font-medium text-[#2563EB]">
             <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#2563EB]" />
             Detection in Progress...
           </div>
-        )}
-        {detectionState === "completed" && (
-          <button
-            onClick={() => navigate(`/projects/${projectId}/bug-detection/syntax-detection`)}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-6 py-3 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
-          >
-            View Syntax Results
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── Navigation ── */}
       <div className="flex items-center justify-between pt-2">
@@ -394,21 +802,21 @@ export function BugDetectionWorkspace() {
           <ChevronLeft className="h-4 w-4" />
           Previous: Project Analysis
         </button>
-        <span className="text-xs text-[#9CA3AF]">Step 4 of 8</span>
-        {detectionState !== "completed" ? (
+        <span className="text-xs text-[#9CA3AF]">Step 8 of 8</span>
+        {isCompleted ? (
           <button
-            disabled
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#E5E7EB] px-5 py-2.5 text-sm font-medium text-[#9CA3AF] cursor-not-allowed"
+            onClick={() => navigate(`/projects/${projectId}/bug-detection`)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
           >
-            Next: Syntax Analysis
+            Next: Testing & QA
             <ChevronRight className="h-4 w-4" />
           </button>
         ) : (
           <button
-            onClick={() => navigate(`/projects/${projectId}/bug-detection/syntax-detection`)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
+            disabled
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#E5E7EB] px-5 py-2.5 text-sm font-medium text-[#9CA3AF] cursor-not-allowed"
           >
-            Next: Syntax Analysis
+            Next: Testing & QA
             <ChevronRight className="h-4 w-4" />
           </button>
         )}
@@ -416,4 +824,21 @@ export function BugDetectionWorkspace() {
 
     </motion.div>
   );
+}
+
+const detectionStages = [
+  "Scanning source files for syntax errors...",
+  "Analyzing code structure and quality...",
+  "Checking dependencies for conflicts...",
+  "Inspecting runtime behavior patterns...",
+  "Scanning for security vulnerabilities...",
+  "Evaluating performance bottlenecks...",
+  "Reviewing architecture and logic...",
+  "Prioritizing detected issues...",
+];
+
+function catFilteredBugs(cat: BugCategory, filteredBugs: SyntaxErrorInfo[]): SyntaxErrorInfo[] {
+  if (cat.total === 0) return [];
+  const catBugs = new Set(cat.bugs);
+  return filteredBugs.filter((b) => catBugs.has(b));
 }

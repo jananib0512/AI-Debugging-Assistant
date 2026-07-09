@@ -49,7 +49,6 @@ import { CodeIntelligencePage } from "@/pages/code-intelligence-page";
 import { CodeQualityPage } from "@/pages/code-quality-page";
 import { BugDetectionLayout } from "@/pages/bug-detection/BugDetectionLayout";
 import { BugDetectionWorkspace } from "@/pages/bug-detection/BugDetectionWorkspace";
-import { SyntaxDetectionResults } from "@/pages/bug-detection/SyntaxDetectionResults";
 import { ScanHistoryPage } from "@/pages/scan-history-page";
 import { AiStatusPage } from "@/pages/ai-status-page";
 import { SettingsPage } from "@/pages/settings-page";
@@ -118,7 +117,6 @@ export function App() {
                 </Route>
                 <Route path="/projects/:projectId/bug-detection" element={<BugDetectionLayout />}>
                   <Route index element={<BugDetectionWorkspace />} />
-                  <Route path="syntax-detection" element={<SyntaxDetectionResults />} />
                 </Route>
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/scan-history" element={<ScanHistoryPage />} />

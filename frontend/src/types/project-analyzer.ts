@@ -2201,6 +2201,7 @@ export interface SyntaxErrorInfo {
   ai_explanation: string;
   suggested_fix: string;
   error_type: string;
+  function_name: string;
 }
 
 export interface SyntaxDetectionResult {
@@ -2227,4 +2228,223 @@ export interface SyntaxDetectionResponse {
   low_count: number;
   results: SyntaxDetectionResult[];
   scanned_languages: string[];
+}
+
+export interface StaticCodeAnalysisResult {
+  file_path: string;
+  language: string;
+  errors: SyntaxErrorInfo[];
+  error_count: number;
+  health_score: number;
+}
+
+export interface StaticCodeAnalysisResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  language: string;
+  status: string;
+  summary: string;
+  total_errors: number;
+  total_files_scanned: number;
+  files_with_errors: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  results: StaticCodeAnalysisResult[];
+  scanned_languages: string[];
+}
+
+export interface DependencyIssueInfo extends SyntaxErrorInfo {
+  package_name: string;
+  current_version: string;
+  recommended_version: string;
+}
+
+export interface DependencyAnalysisResult {
+  file_path: string;
+  language: string;
+  errors: DependencyIssueInfo[];
+  error_count: number;
+  health_score: number;
+}
+
+export interface DependencyAnalysisResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  language: string;
+  status: string;
+  summary: string;
+  total_errors: number;
+  total_files_scanned: number;
+  files_with_errors: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  results: DependencyAnalysisResult[];
+  package_manager: string;
+  declared_packages: string[];
+}
+
+export interface RuntimeIssueInfo extends SyntaxErrorInfo {
+  possible_impact: string;
+}
+
+export interface RuntimeAnalysisResult {
+  file_path: string;
+  language: string;
+  errors: RuntimeIssueInfo[];
+  error_count: number;
+  health_score: number;
+}
+
+export interface RuntimeAnalysisResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  language: string;
+  status: string;
+  summary: string;
+  total_errors: number;
+  total_files_scanned: number;
+  files_with_errors: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  results: RuntimeAnalysisResult[];
+  scanned_languages: string[];
+}
+
+export interface SecurityIssueInfo extends SyntaxErrorInfo {
+  security_category: string;
+  security_impact: string;
+  cwe_id: string;
+}
+
+export interface SecurityAnalysisResult {
+  file_path: string;
+  language: string;
+  errors: SecurityIssueInfo[];
+  error_count: number;
+  health_score: number;
+}
+
+export interface SecurityAnalysisResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  language: string;
+  status: string;
+  summary: string;
+  total_errors: number;
+  total_files_scanned: number;
+  files_with_errors: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  results: SecurityAnalysisResult[];
+  scanned_languages: string[];
+  security_score: number;
+}
+
+export interface PerformanceIssueInfo extends SyntaxErrorInfo {
+  performance_category: string;
+  estimated_cost: string;
+}
+
+export interface PerformanceAnalysisResult {
+  file_path: string;
+  language: string;
+  errors: PerformanceIssueInfo[];
+  error_count: number;
+  health_score: number;
+}
+
+export interface PerformanceAnalysisResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  language: string;
+  status: string;
+  summary: string;
+  total_errors: number;
+  total_files_scanned: number;
+  files_with_errors: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  results: PerformanceAnalysisResult[];
+  scanned_languages: string[];
+}
+
+export interface ArchitectureIssueInfo extends SyntaxErrorInfo {
+  architecture_category: string;
+  impact_scope: string;
+}
+
+export interface ArchitectureAnalysisResult {
+  file_path: string;
+  language: string;
+  errors: ArchitectureIssueInfo[];
+  error_count: number;
+  health_score: number;
+}
+
+export interface ArchitectureAnalysisResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  language: string;
+  status: string;
+  summary: string;
+  total_errors: number;
+  total_files_scanned: number;
+  files_with_errors: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  results: ArchitectureAnalysisResult[];
+  scanned_languages: string[];
+}
+
+export interface PrioritizedIssueInfo extends SyntaxErrorInfo {
+  source_engine: string;
+  priority_score: number;
+  cross_cutting_categories: string[];
+  recommended_action: string;
+}
+
+export interface PrioritizationFileGroup {
+  file_path: string;
+  language: string;
+  total_issues: number;
+  avg_priority: number;
+  max_severity: string;
+  issues: PrioritizedIssueInfo[];
+}
+
+export interface PrioritizationResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  language: string;
+  status: string;
+  summary: string;
+  total_issues: number;
+  total_files_affected: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  prioritized_issues: PrioritizedIssueInfo[];
+  file_groups: PrioritizationFileGroup[];
+  ai_recommendations: string[];
+  analyzed_at: string;
 }
