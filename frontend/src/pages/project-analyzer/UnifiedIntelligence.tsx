@@ -212,7 +212,7 @@ export function UnifiedIntelligence() {
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/70">
             <Radar className="h-3.5 w-3.5" /> Unified AI Analyzer Dashboard
           </div>
-          <p className="mt-1 text-2xl font-bold">Enterprise Intelligence Hub</p>
+          <p className="mt-1 text-2xl font-bold">Analysis Overview</p>
           <p className="mt-1 text-sm text-white/80">
             Unified health, scores, insights, knowledge graph, and cross-analyzer navigation.
           </p>

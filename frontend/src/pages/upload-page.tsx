@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { WorkflowTracker } from "@/components/workflow/WorkflowTracker";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
@@ -411,14 +412,6 @@ export function UploadPage() {
 
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <Button
-                  variant="default"
-                  className="gap-2"
-                  onClick={() => navigate(`/workspace/${project.id}`)}
-                >
-                  <ArrowRight className="h-4 w-4" />
-                  Open Workspace
-                </Button>
-                <Button
                   variant="outline"
                   className="gap-2"
                   onClick={handleReset}
@@ -426,12 +419,22 @@ export function UploadPage() {
                   <Upload className="h-4 w-4" />
                   Upload another project
                 </Button>
+                <Button
+                  variant="default"
+                  className="gap-2"
+                  onClick={() => navigate(`/projects/${project.id}/overview`)}
+                >
+                  Next: Project Overview
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </Card>
         </motion.div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="space-y-6">
+          <WorkflowTracker currentStep="upload" />
+          <div className="grid gap-6 lg:grid-cols-5">
           <div className="lg:col-span-3">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -762,6 +765,7 @@ export function UploadPage() {
             </motion.div>
           </div>
         </div>
+      </div>
       )}
     </div>
   );

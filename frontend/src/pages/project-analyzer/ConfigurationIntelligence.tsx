@@ -30,7 +30,7 @@ export function ConfigurationIntelligence() {
       </div>
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">Project Analyzer</p>
-        <h1 className="mt-0.5 text-xl font-bold text-[#111827]">Configuration Intelligence</h1>
+        <h1 className="mt-0.5 text-xl font-bold text-[#111827]">Configuration</h1>
       </div>
 
       {configIntel.health && (

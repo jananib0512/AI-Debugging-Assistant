@@ -198,9 +198,9 @@ export function PerformanceIntelligence() {
       <div className="overflow-hidden rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#4C1D95]">
         <div className="px-6 py-8 text-white">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/70">
-            <Zap className="h-3.5 w-3.5" /> Performance Intelligence Engine
+            <Zap className="h-3.5 w-3.5" /> Performance Analysis
           </div>
-          <p className="mt-1 text-2xl font-bold">Performance Intelligence</p>
+          <p className="mt-1 text-2xl font-bold">Performance</p>
           <p className="mt-1 text-sm text-white/80">
             Identify bottlenecks, optimize execution paths, and improve runtime efficiency.
           </p>

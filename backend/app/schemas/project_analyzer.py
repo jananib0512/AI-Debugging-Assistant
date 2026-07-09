@@ -2110,3 +2110,294 @@ class TestIntelligenceResponse(BaseModel):
     recommendations: list[TestRecommendation] = []
     summary: TestSummary = TestSummary()
     analyzed_at: datetime
+
+
+# ── Phase 3C.8: Production Readiness Intelligence ─────────────────────────────
+
+
+class ProductionScore(BaseModel):
+    overall_production_score: float = 0.0
+    deployment_readiness: float = 0.0
+    operational_readiness: float = 0.0
+    maintainability_readiness: float = 0.0
+    ai_confidence: float = 0.0
+
+
+class ProductionFinding(BaseModel):
+    name: str
+    category: str = ""
+    severity: str = "medium"
+    affected_files: list[str] = []
+    affected_components: list[str] = []
+    detail: str = ""
+    deployment_impact: str = ""
+    business_impact: str = ""
+    ai_recommendation: str = ""
+
+
+class DeploymentDetection(BaseModel):
+    has_dockerfile: bool = False
+    has_docker_compose: bool = False
+    has_kubernetes: bool = False
+    has_helm_charts: bool = False
+    has_github_actions: bool = False
+    has_gitlab_ci: bool = False
+    has_azure_pipelines: bool = False
+    has_jenkins: bool = False
+    has_render_config: bool = False
+    has_railway_config: bool = False
+    has_vercel_config: bool = False
+    has_netlify_config: bool = False
+    has_deployment_scripts: bool = False
+    detected_platforms: list[str] = []
+
+
+class ConfigValidation(BaseModel):
+    has_environment_variables: bool = False
+    has_env_file: bool = False
+    has_production_config: bool = False
+    has_development_config: bool = False
+    has_secret_management: bool = False
+    has_database_config: bool = False
+    has_cache_config: bool = False
+    env_var_count: int = 0
+
+
+class ReleaseReadiness(BaseModel):
+    has_versioning: bool = False
+    has_release_notes: bool = False
+    has_build_scripts: bool = False
+    has_startup_scripts: bool = False
+    has_shutdown_handling: bool = False
+    has_health_checks: bool = False
+
+
+class ObservabilityDetection(BaseModel):
+    has_logging: bool = False
+    has_monitoring: bool = False
+    has_metrics: bool = False
+    has_tracing: bool = False
+    has_health_endpoints: bool = False
+
+
+class CategoryScore(BaseModel):
+    architecture_readiness: float = 0.0
+    security_readiness: float = 0.0
+    performance_readiness: float = 0.0
+    dependency_health: float = 0.0
+    configuration_health: float = 0.0
+    environment_configuration: float = 0.0
+    logging_configuration: float = 0.0
+    monitoring_support: float = 0.0
+    error_handling: float = 0.0
+    exception_handling: float = 0.0
+    documentation_readiness: float = 0.0
+    testing_readiness: float = 0.0
+    cicd_readiness: float = 0.0
+
+
+class ProductionSummary(BaseModel):
+    classification: str = "Not Ready"
+    total_findings: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    summary_text: str = ""
+    prioritized_recommendations: list[str] = []
+
+
+class ProductionReadinessResponse(BaseModel):
+    production_score: ProductionScore
+    category_scores: CategoryScore = CategoryScore()
+    findings: list[ProductionFinding] = []
+    deployment: DeploymentDetection = DeploymentDetection()
+    config_validation: ConfigValidation = ConfigValidation()
+    release_readiness: ReleaseReadiness = ReleaseReadiness()
+    observability: ObservabilityDetection = ObservabilityDetection()
+    summary: ProductionSummary = ProductionSummary()
+    analyzed_at: datetime
+
+
+# ── Phase 3C.9: AI Software Engineering Readiness ─────────────────────────────
+
+
+class AiEngineeringScore(BaseModel):
+    overall_engineering_score: float = 0.0
+    engineering_readiness: float = 0.0
+    ai_confidence: float = 0.0
+    repair_readiness: float = 0.0
+    automation_readiness: float = 0.0
+    project_stability: float = 0.0
+
+
+class EngineeringCapability(BaseModel):
+    name: str
+    score: float = 0.0
+    status: str = "unknown"
+    detail: str = ""
+    requirements: list[str] = []
+
+
+class ProjectHealthEntry(BaseModel):
+    architecture_health: float = 0.0
+    code_health: float = 0.0
+    dependency_health: float = 0.0
+    security_health: float = 0.0
+    performance_health: float = 0.0
+    maintainability_health: float = 0.0
+    documentation_health: float = 0.0
+    testing_health: float = 0.0
+    production_health: float = 0.0
+
+
+class RepairReadinessEstimate(BaseModel):
+    files_safe_to_modify: int = 0
+    high_risk_files: int = 0
+    protected_files: int = 0
+    configuration_files: int = 0
+    core_modules: int = 0
+    utility_modules: int = 0
+
+
+class EngineeringRoadmapStage(BaseModel):
+    step: int
+    name: str
+    status: str = "pending"
+    readiness: float = 0.0
+    detail: str = ""
+
+
+class AiEngineeringFinding(BaseModel):
+    name: str
+    category: str = ""
+    severity: str = "medium"
+    detail: str = ""
+    affected_modules: list[str] = []
+    impact: str = ""
+    recommendation: str = ""
+
+
+class AiEngineeringSummary(BaseModel):
+    summary_text: str = ""
+    capabilities_ready: int = 0
+    capabilities_total: int = 7
+    critical_findings: int = 0
+    high_findings: int = 0
+    prioritized_recommendations: list[str] = []
+
+
+class AiEngineeringReadinessResponse(BaseModel):
+    engineering_score: AiEngineeringScore
+    capabilities: list[EngineeringCapability] = []
+    project_health: ProjectHealthEntry = ProjectHealthEntry()
+    findings: list[AiEngineeringFinding] = []
+    repair_readiness: RepairReadinessEstimate = RepairReadinessEstimate()
+    roadmap: list[EngineeringRoadmapStage] = []
+    summary: AiEngineeringSummary = AiEngineeringSummary()
+    analyzed_at: datetime
+
+
+# ── Phase 4.1.1: Bug Detection Workspace Initialization ────────────────────────
+
+
+class DetectionModule(BaseModel):
+    name: str
+    ready: bool = True
+    description: str = ""
+
+
+class WorkspaceStatusCard(BaseModel):
+    label: str
+    status: str = "ready"
+
+
+class BugDetectionWorkspaceResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str = ""
+    language: str = ""
+    project_type: str = ""
+    workspace_status: str = "initialized"
+    project_ready: bool = True
+    analysis_ready: bool = True
+    detection_ready: bool = True
+    ai_confidence: float = 0.0
+    total_files: int = 0
+    total_folders: int = 0
+    status_cards: list[WorkspaceStatusCard] = []
+    detection_modules: list[DetectionModule] = []
+    analysis_summary: str = ""
+    initialized_at: datetime
+
+
+# ── Phase 4.1.2: AI Bug Detection Pipeline Manager ─────────────────────────
+
+
+class PipelineModule(BaseModel):
+    name: str
+    order: int
+    status: str = "ready"
+    description: str = ""
+    purpose: str = ""
+    required_inputs: list[str] = []
+    expected_outputs: list[str] = []
+
+
+class PipelineStatusResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str = ""
+    pipeline_status: str = "initialized"
+    overall_readiness: int = 0
+    modules_ready: int = 0
+    modules_total: int = 0
+    modules_waiting: int = 0
+    modules: list[PipelineModule] = []
+    status_cards: list[WorkspaceStatusCard] = []
+    summary: str = ""
+    initialized_at: datetime
+
+
+# ── Phase 4.2.1: Syntax & Compilation Bug Detection ──────────────────────
+
+
+class SyntaxErrorInfo(BaseModel):
+    bug_title: str
+    description: str
+    severity: str
+    confidence: int
+    language: str
+    affected_file: str
+    line_number: int
+    column_number: int
+    code_snippet: str
+    ai_explanation: str
+    suggested_fix: str
+    error_type: str = "syntax"
+
+
+class SyntaxDetectionResult(BaseModel):
+    file_path: str
+    language: str
+    errors: list[SyntaxErrorInfo] = []
+    error_count: int = 0
+    health_score: float = 100.0
+
+
+class SyntaxDetectionResponse(BaseModel):
+    session_id: str
+    project_id: int
+    project_name: str
+    language: str
+    status: str
+    summary: str
+    total_errors: int = 0
+    total_files_scanned: int = 0
+    files_with_errors: int = 0
+    critical_count: int = 0
+    high_count: int = 0
+    medium_count: int = 0
+    low_count: int = 0
+    results: list[SyntaxDetectionResult] = []
+    scanned_languages: list[str] = []

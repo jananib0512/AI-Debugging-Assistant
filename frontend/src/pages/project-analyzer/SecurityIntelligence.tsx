@@ -213,9 +213,9 @@ export function SecurityIntelligence() {
       <div className="overflow-hidden rounded-xl bg-gradient-to-br from-[#1E40AF] to-[#1E3A5F]">
         <div className="px-6 py-8 text-white">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/70">
-            <Shield className="h-3.5 w-3.5" /> Security Intelligence Engine
+            <Shield className="h-3.5 w-3.5" /> Security Analysis
           </div>
-          <p className="mt-1 text-2xl font-bold">Security Intelligence</p>
+          <p className="mt-1 text-2xl font-bold">Security</p>
           <p className="mt-1 text-sm text-white/80">
             Enterprise-grade security vulnerability detection, dependency auditing, and configuration analysis.
           </p>

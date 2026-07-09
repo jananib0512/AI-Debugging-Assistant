@@ -472,9 +472,9 @@ export function CallGraphIntelligence() {
       <div className="overflow-hidden rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB]">
         <div className="px-6 py-8 text-white">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/70">
-            <Share2 className="h-3.5 w-3.5" /> Call Graph & Execution Flow Engine
+            <Share2 className="h-3.5 w-3.5" /> Call Graph & Execution Flow
           </div>
-          <p className="mt-1 text-2xl font-bold">Call Graph Intelligence</p>
+          <p className="mt-1 text-2xl font-bold">Call Graph</p>
           <p className="mt-1 text-sm text-white/80">
             Interactive visualization of function calls, execution flows, entry points, and call chain analysis.
           </p>

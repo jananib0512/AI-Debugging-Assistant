@@ -273,7 +273,7 @@ function RefactoringIntelligenceInner() {
               <GitCompare className="h-6 w-6 text-[#60A5FA]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">AI Refactoring Intelligence</h1>
+              <h1 className="text-xl font-bold">Code Improvement</h1>
               <p className="mt-1 text-xs text-[#94A3B8]">
                 Automated structural improvement analysis and refactoring recommendations
               </p>
@@ -306,7 +306,7 @@ function RefactoringIntelligenceInner() {
             <GitCompare className="h-6 w-6 text-[#60A5FA]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">AI Refactoring Intelligence</h1>
+            <h1 className="text-xl font-bold">Code Improvement</h1>
             <p className="mt-1 text-xs text-[#94A3B8]">
               Automated structural improvement analysis and refactoring recommendations
             </p>

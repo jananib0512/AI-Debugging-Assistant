@@ -1952,3 +1952,279 @@ export interface RefactoringIntelligenceResponse {
   summary: RefactoringSummary;
   analyzed_at: string;
 }
+
+export interface ProductionScore {
+  overall_production_score: number;
+  deployment_readiness: number;
+  operational_readiness: number;
+  maintainability_readiness: number;
+  ai_confidence: number;
+}
+
+export interface ProductionFinding {
+  name: string;
+  category: string;
+  severity: string;
+  affected_files: string[];
+  affected_components: string[];
+  detail: string;
+  deployment_impact: string;
+  business_impact: string;
+  ai_recommendation: string;
+}
+
+export interface DeploymentDetection {
+  has_dockerfile: boolean;
+  has_docker_compose: boolean;
+  has_kubernetes: boolean;
+  has_helm_charts: boolean;
+  has_github_actions: boolean;
+  has_gitlab_ci: boolean;
+  has_azure_pipelines: boolean;
+  has_jenkins: boolean;
+  has_render_config: boolean;
+  has_railway_config: boolean;
+  has_vercel_config: boolean;
+  has_netlify_config: boolean;
+  has_deployment_scripts: boolean;
+  detected_platforms: string[];
+}
+
+export interface ConfigValidation {
+  has_environment_variables: boolean;
+  has_env_file: boolean;
+  has_production_config: boolean;
+  has_development_config: boolean;
+  has_secret_management: boolean;
+  has_database_config: boolean;
+  has_cache_config: boolean;
+  env_var_count: number;
+}
+
+export interface ReleaseReadiness {
+  has_versioning: boolean;
+  has_release_notes: boolean;
+  has_build_scripts: boolean;
+  has_startup_scripts: boolean;
+  has_shutdown_handling: boolean;
+  has_health_checks: boolean;
+}
+
+export interface ObservabilityDetection {
+  has_logging: boolean;
+  has_monitoring: boolean;
+  has_metrics: boolean;
+  has_tracing: boolean;
+  has_health_endpoints: boolean;
+}
+
+export interface CategoryScore {
+  architecture_readiness: number;
+  security_readiness: number;
+  performance_readiness: number;
+  dependency_health: number;
+  configuration_health: number;
+  environment_configuration: number;
+  logging_configuration: number;
+  monitoring_support: number;
+  error_handling: number;
+  exception_handling: number;
+  documentation_readiness: number;
+  testing_readiness: number;
+  cicd_readiness: number;
+}
+
+export interface ProductionSummary {
+  classification: string;
+  total_findings: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  summary_text: string;
+  prioritized_recommendations: string[];
+}
+
+export interface ProductionReadinessResponse {
+  production_score: ProductionScore;
+  category_scores: CategoryScore;
+  findings: ProductionFinding[];
+  deployment: DeploymentDetection;
+  config_validation: ConfigValidation;
+  release_readiness: ReleaseReadiness;
+  observability: ObservabilityDetection;
+  summary: ProductionSummary;
+  analyzed_at: string;
+}
+
+export interface AiEngineeringScore {
+  overall_engineering_score: number;
+  engineering_readiness: number;
+  ai_confidence: number;
+  repair_readiness: number;
+  automation_readiness: number;
+  project_stability: number;
+}
+
+export interface EngineeringCapability {
+  name: string;
+  score: number;
+  status: string;
+  detail: string;
+  requirements: string[];
+}
+
+export interface ProjectHealthEntry {
+  architecture_health: number;
+  code_health: number;
+  dependency_health: number;
+  security_health: number;
+  performance_health: number;
+  maintainability_health: number;
+  documentation_health: number;
+  testing_health: number;
+  production_health: number;
+}
+
+export interface RepairReadinessEstimate {
+  files_safe_to_modify: number;
+  high_risk_files: number;
+  protected_files: number;
+  configuration_files: number;
+  core_modules: number;
+  utility_modules: number;
+}
+
+export interface EngineeringRoadmapStage {
+  step: number;
+  name: string;
+  status: string;
+  readiness: number;
+  detail: string;
+}
+
+export interface AiEngineeringFinding {
+  name: string;
+  category: string;
+  severity: string;
+  detail: string;
+  affected_modules: string[];
+  impact: string;
+  recommendation: string;
+}
+
+export interface AiEngineeringSummary {
+  summary_text: string;
+  capabilities_ready: number;
+  capabilities_total: number;
+  critical_findings: number;
+  high_findings: number;
+  prioritized_recommendations: string[];
+}
+
+export interface AiEngineeringReadinessResponse {
+  engineering_score: AiEngineeringScore;
+  capabilities: EngineeringCapability[];
+  project_health: ProjectHealthEntry;
+  findings: AiEngineeringFinding[];
+  repair_readiness: RepairReadinessEstimate;
+  roadmap: EngineeringRoadmapStage[];
+  summary: AiEngineeringSummary;
+  analyzed_at: string;
+}
+
+export interface DetectionModule {
+  name: string;
+  description: string;
+  ready: boolean;
+}
+
+export interface WorkspaceStatusCard {
+  label: string;
+  status: string;
+}
+
+export interface BugDetectionWorkspaceResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  language: string;
+  project_type: string;
+  workspace_status: string;
+  project_ready: boolean;
+  analysis_ready: boolean;
+  detection_ready: boolean;
+  ai_confidence: number;
+  total_files: number;
+  total_folders: number;
+  status_cards: WorkspaceStatusCard[];
+  detection_modules: DetectionModule[];
+  analysis_summary: string;
+  initialized_at: string;
+}
+
+export interface PipelineModule {
+  name: string;
+  order: number;
+  status: string;
+  description: string;
+  purpose: string;
+  required_inputs: string[];
+  expected_outputs: string[];
+}
+
+export interface PipelineStatusResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  pipeline_status: string;
+  overall_readiness: number;
+  modules_ready: number;
+  modules_total: number;
+  modules_waiting: number;
+  modules: PipelineModule[];
+  status_cards: WorkspaceStatusCard[];
+  summary: string;
+  initialized_at: string;
+}
+
+export interface SyntaxErrorInfo {
+  bug_title: string;
+  description: string;
+  severity: string;
+  confidence: number;
+  language: string;
+  affected_file: string;
+  line_number: number;
+  column_number: number;
+  code_snippet: string;
+  ai_explanation: string;
+  suggested_fix: string;
+  error_type: string;
+}
+
+export interface SyntaxDetectionResult {
+  file_path: string;
+  language: string;
+  errors: SyntaxErrorInfo[];
+  error_count: number;
+  health_score: number;
+}
+
+export interface SyntaxDetectionResponse {
+  session_id: string;
+  project_id: number;
+  project_name: string;
+  language: string;
+  status: string;
+  summary: string;
+  total_errors: number;
+  total_files_scanned: number;
+  files_with_errors: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  results: SyntaxDetectionResult[];
+  scanned_languages: string[];
+}

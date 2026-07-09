@@ -1,48 +1,21 @@
 import type { ElementType } from "react";
 import {
-  BarChart3,
-  Bug,
-  LayoutDashboard,
-  Layers,
-  LogOut,
-  FolderKanban,
-  Radio,
-  ScrollText,
-  Settings,
-  Shield,
-  User,
-  Workflow,
+  Bug, LayoutDashboard, Layers, LogOut,
+  FolderKanban, Settings, Upload, User,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-
 import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
 
-interface SidebarProps {
-  open: boolean;
-  onClose: () => void;
-}
-
-interface NavItem {
-  href?: string;
-  label: string;
-  icon: ElementType;
-  disabled?: boolean;
-}
+interface SidebarProps { open: boolean; onClose: () => void; }
+interface NavItem { href?: string; label: string; icon: ElementType; disabled?: boolean; }
 
 const mainNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/upload", label: "Upload Project", icon: Upload },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/workspace", label: "Workspace", icon: Layers },
-];
-
-const comingSoonNav: NavItem[] = [
-  { label: "Bug Detection", icon: Bug, disabled: true },
-  { label: "Runtime Monitor", icon: Radio, disabled: true },
-  { label: "Performance", icon: BarChart3, disabled: true },
-  { label: "Security", icon: Shield, disabled: true },
-  { label: "AI Suggestions", icon: Workflow, disabled: true },
-  { label: "Reports", icon: ScrollText, disabled: true },
+  { href: "/projects", label: "Bug Detection", icon: Bug },
 ];
 
 const bottomNav: NavItem[] = [
@@ -70,9 +43,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         >
           <Icon className="h-[18px] w-[18px] shrink-0 opacity-50" />
           <span className="flex-1">{label}</span>
-          <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-medium text-[#6B7280]">
-            Coming Soon
-          </span>
         </div>
       );
     }
@@ -119,20 +89,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         )}
       >
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          <p className="px-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-[#6B7280]/50">
+            AI Software Engineer
+          </p>
           {mainNav.map((item) => (
             <NavLink key={item.label} {...item} />
           ))}
-
-          <div className="pt-4 pb-1">
-            <p className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[#6B7280]/50">
-              AI Features
-            </p>
-            <div className="space-y-0">
-              {comingSoonNav.map((item) => (
-                <NavLink key={item.label} {...item} />
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="border-t border-[#E5E7EB] px-3 py-3 space-y-0">

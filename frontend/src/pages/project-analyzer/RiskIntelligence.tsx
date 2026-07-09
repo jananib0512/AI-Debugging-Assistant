@@ -234,9 +234,9 @@ export function RiskIntelligence() {
       <div className="overflow-hidden rounded-xl bg-gradient-to-br from-[#DC2626] to-[#991B1B]">
         <div className="px-6 py-8 text-white">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/70">
-            <ShieldAlert className="h-3.5 w-3.5" /> Project Risk Intelligence Engine
+            <ShieldAlert className="h-3.5 w-3.5" /> Project Risk Analysis
           </div>
-          <p className="mt-1 text-2xl font-bold">Risk Intelligence</p>
+          <p className="mt-1 text-2xl font-bold">Project Risks</p>
           <p className="mt-1 text-sm text-white/80">
             Enterprise-grade risk scoring, heatmaps, AI summaries, and prioritized recommendations.
           </p>

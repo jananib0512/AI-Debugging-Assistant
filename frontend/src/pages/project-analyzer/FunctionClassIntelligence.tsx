@@ -526,9 +526,9 @@ export function FunctionClassIntelligence() {
       <div className="overflow-hidden rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB]">
         <div className="px-6 py-8 text-white">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/70">
-            <FunctionSquare className="h-3.5 w-3.5" /> Function & Class Intelligence Engine
+            <FunctionSquare className="h-3.5 w-3.5" /> Functions & Classes
           </div>
-          <p className="mt-1 text-2xl font-bold">Function & Class Intelligence</p>
+          <p className="mt-1 text-2xl font-bold">Functions & Classes</p>
           <p className="mt-1 text-sm text-white/80">
             Deep analysis of every function and class including complexity, health scores, relationships, and AI insights.
           </p>

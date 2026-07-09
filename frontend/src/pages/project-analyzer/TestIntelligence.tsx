@@ -184,7 +184,7 @@ function TestIntelligenceInner() {
             <FlaskConical className="h-6 w-6 text-[#34D399]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Test Intelligence</h1>
+            <h1 className="text-xl font-bold">Testing</h1>
             <p className="mt-1 text-xs text-[#94A3B8]">
               Enterprise test coverage analysis, quality metrics, and gap detection
             </p>

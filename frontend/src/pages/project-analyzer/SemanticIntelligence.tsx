@@ -274,9 +274,9 @@ export function SemanticIntelligence() {
       <div className="overflow-hidden rounded-xl bg-gradient-to-br from-[#059669] to-[#2563EB]">
         <div className="px-6 py-8 text-white">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/70">
-            <Braces className="h-3.5 w-3.5" /> Semantic Code Intelligence Engine
+            <Braces className="h-3.5 w-3.5" /> Code Understanding
           </div>
-          <p className="mt-1 text-2xl font-bold">Semantic Intelligence</p>
+          <p className="mt-1 text-2xl font-bold">Code Understanding</p>
           <p className="mt-1 text-sm text-white/80">
             Understand what each component does, its role, responsibilities, and how business logic flows through the project.
           </p>

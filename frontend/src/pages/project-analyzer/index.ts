@@ -28,3 +28,6 @@ export { MaintainabilityIntelligence } from "./MaintainabilityIntelligence";
 export { RefactoringIntelligence } from "./RefactoringIntelligence";
 export { DocumentationIntelligence } from "./DocumentationIntelligence";
 export { TestIntelligence } from "./TestIntelligence";
+export { ProductionReadiness } from "./ProductionReadiness";
+export { AiEngineeringReadiness } from "./AiEngineeringReadiness";
+export { FinalEngineeringDashboard } from "./FinalEngineeringDashboard";

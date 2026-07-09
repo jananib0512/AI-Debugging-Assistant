@@ -9,9 +9,13 @@ from app.schemas.project import (
     ProjectUpdateRequest,
 )
 from app.schemas.project_analyzer import (
+    AiEngineeringReadinessResponse,
     AnalyzerResponse,
     AnalyzerValidationResponse,
     ArchitectureDetectionResponse,
+    BugDetectionWorkspaceResponse,
+    PipelineStatusResponse,
+    SyntaxDetectionResponse,
     CallGraphResponse,
     CodeQualityResponse,
     SourceCodeIntelligenceResponse,
@@ -25,6 +29,7 @@ from app.schemas.project_analyzer import (
     FunctionClassResponse,
     ImportDependencyResponse,
     ModuleDetectionResponse,
+    ProductionReadinessResponse,
     ProjectInsightsResponse,
     ProjectIntelligenceResponse,
     RiskIntelligenceResponse,
@@ -65,6 +70,11 @@ from app.services.import_dependency_service import ImportDependencyService
 from app.services.source_code_intelligence_service import SourceCodeIntelligenceService
 from app.services.extraction_service import ExtractionService
 from app.services.metadata_service import MetadataService
+from app.services.ai_engineering_readiness_service import AiEngineeringReadinessService
+from app.services.bug_detection_workspace_service import BugDetectionWorkspaceService
+from app.services.bug_detection_pipeline_service import BugDetectionPipelineService
+from app.services.syntax_detection_service import SyntaxDetectionService
+from app.services.production_readiness_service import ProductionReadinessService
 from app.services.project_analyzer_service import (
     ProjectAnalyzerCoreService,
     ProjectAnalyzerService,
@@ -488,5 +498,60 @@ def get_test_intelligence(
     service: TestIntelligenceService = Depends(TestIntelligenceService),
 ):
     return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/production-readiness", response_model=ProductionReadinessResponse)
+def get_production_readiness(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: ProductionReadinessService = Depends(ProductionReadinessService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/ai-engineering-readiness", response_model=AiEngineeringReadinessResponse)
+def get_ai_engineering_readiness(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: AiEngineeringReadinessService = Depends(AiEngineeringReadinessService),
+):
+    return service.analyze(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/workspace", response_model=BugDetectionWorkspaceResponse)
+def get_bug_detection_workspace(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: BugDetectionWorkspaceService = Depends(BugDetectionWorkspaceService),
+):
+    return service.initialize(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/pipeline", response_model=PipelineStatusResponse)
+def get_bug_detection_pipeline(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: BugDetectionPipelineService = Depends(BugDetectionPipelineService),
+):
+    return service.get_pipeline(
+        user_id=current_user.id, project_id=project_id
+    )
+
+
+@router.get("/{project_id}/bug-detection/syntax-detection", response_model=SyntaxDetectionResponse)
+def get_syntax_detection(
+    project_id: int,
+    current_user: User = Depends(require_auth),
+    service: SyntaxDetectionService = Depends(SyntaxDetectionService),
+):
+    return service.detect(
         user_id=current_user.id, project_id=project_id
     )

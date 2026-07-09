@@ -270,9 +270,9 @@ export function MaintainabilityIntelligence() {
       <div className="overflow-hidden rounded-xl bg-gradient-to-br from-[#059669] to-[#064E3B]">
         <div className="px-6 py-8 text-white">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/70">
-            <Wrench className="h-3.5 w-3.5" /> Maintainability Intelligence Engine
+            <Wrench className="h-3.5 w-3.5" /> Maintainability Analysis
           </div>
-          <p className="mt-1 text-2xl font-bold">Maintainability Intelligence</p>
+          <p className="mt-1 text-2xl font-bold">Maintainability</p>
           <p className="mt-1 text-sm text-white/80">
             Evaluate long-term maintainability, technical debt, code smells and refactoring readiness.
           </p>

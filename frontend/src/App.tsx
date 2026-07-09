@@ -41,9 +41,15 @@ import {
   RefactoringIntelligence,
   DocumentationIntelligence,
   TestIntelligence,
+  ProductionReadiness,
+  AiEngineeringReadiness,
+  FinalEngineeringDashboard,
 } from "@/pages/project-analyzer";
 import { CodeIntelligencePage } from "@/pages/code-intelligence-page";
 import { CodeQualityPage } from "@/pages/code-quality-page";
+import { BugDetectionLayout } from "@/pages/bug-detection/BugDetectionLayout";
+import { BugDetectionWorkspace } from "@/pages/bug-detection/BugDetectionWorkspace";
+import { SyntaxDetectionResults } from "@/pages/bug-detection/SyntaxDetectionResults";
 import { ScanHistoryPage } from "@/pages/scan-history-page";
 import { AiStatusPage } from "@/pages/ai-status-page";
 import { SettingsPage } from "@/pages/settings-page";
@@ -98,6 +104,9 @@ export function App() {
                   <Route path="refactoring-intelligence" element={<RefactoringIntelligence />} />
                   <Route path="documentation-intelligence" element={<DocumentationIntelligence />} />
                   <Route path="test-intelligence" element={<TestIntelligence />} />
+                  <Route path="production-readiness" element={<ProductionReadiness />} />
+                  <Route path="ai-engineering-readiness" element={<AiEngineeringReadiness />} />
+                  <Route path="final-dashboard" element={<FinalEngineeringDashboard />} />
                   <Route path="*" element={
                     <div className="flex flex-col items-center justify-center py-20">
                       <div className="rounded-lg border border-[#E5E7EB] bg-white px-6 py-8 text-center shadow-sm max-w-md">
@@ -106,6 +115,10 @@ export function App() {
                       </div>
                     </div>
                   } />
+                </Route>
+                <Route path="/projects/:projectId/bug-detection" element={<BugDetectionLayout />}>
+                  <Route index element={<BugDetectionWorkspace />} />
+                  <Route path="syntax-detection" element={<SyntaxDetectionResults />} />
                 </Route>
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/scan-history" element={<ScanHistoryPage />} />

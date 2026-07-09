@@ -1,8 +1,12 @@
 import { api } from "@/lib/api";
 import type {
+  AiEngineeringReadinessResponse,
   AnalyzerResponse,
   AnalyzerValidationResponse,
   ArchitectureDetectionResponse,
+  BugDetectionWorkspaceResponse,
+  PipelineStatusResponse,
+  SyntaxDetectionResponse,
   CallGraphResponse,
   CodeQualityResponse,
   ConfigurationIntelligenceResponse,
@@ -15,6 +19,7 @@ import type {
   FunctionClassResponse,
   ImportDependencyResponse,
   ModuleDetectionResponse,
+  ProductionReadinessResponse,
   ProjectAnalysis,
   ProjectInsightsResponse,
   ProjectIntelligenceResponse,
@@ -268,6 +273,51 @@ export async function getTestIntelligence(
 ): Promise<TestIntelligenceResponse> {
   const res = await api.get<TestIntelligenceResponse>(
     `/projects/${projectId}/test-intelligence`,
+  );
+  return res.data;
+}
+
+export async function getProductionReadiness(
+  projectId: number,
+): Promise<ProductionReadinessResponse> {
+  const res = await api.get<ProductionReadinessResponse>(
+    `/projects/${projectId}/production-readiness`,
+  );
+  return res.data;
+}
+
+export async function getAiEngineeringReadiness(
+  projectId: number,
+): Promise<AiEngineeringReadinessResponse> {
+  const res = await api.get<AiEngineeringReadinessResponse>(
+    `/projects/${projectId}/ai-engineering-readiness`,
+  );
+  return res.data;
+}
+
+export async function getBugDetectionWorkspace(
+  projectId: number,
+): Promise<BugDetectionWorkspaceResponse> {
+  const res = await api.get<BugDetectionWorkspaceResponse>(
+    `/projects/${projectId}/bug-detection/workspace`,
+  );
+  return res.data;
+}
+
+export async function getBugDetectionPipeline(
+  projectId: number,
+): Promise<PipelineStatusResponse> {
+  const res = await api.get<PipelineStatusResponse>(
+    `/projects/${projectId}/bug-detection/pipeline`,
+  );
+  return res.data;
+}
+
+export async function getSyntaxDetection(
+  projectId: number,
+): Promise<SyntaxDetectionResponse> {
+  const res = await api.get<SyntaxDetectionResponse>(
+    `/projects/${projectId}/bug-detection/syntax-detection`,
   );
   return res.data;
 }

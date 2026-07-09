@@ -167,7 +167,7 @@ function DocumentationIntelligenceInner() {
               <BookOpen className="h-6 w-6 text-[#60A5FA]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Documentation Intelligence</h1>
+              <h1 className="text-xl font-bold">Documentation</h1>
               <p className="mt-1 text-xs text-[#94A3B8]">
                 Automated documentation quality analysis and coverage assessment
               </p>
@@ -198,7 +198,7 @@ function DocumentationIntelligenceInner() {
             <BookOpen className="h-6 w-6 text-[#60A5FA]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Documentation Intelligence</h1>
+            <h1 className="text-xl font-bold">Documentation</h1>
             <p className="mt-1 text-xs text-[#94A3B8]">
               Automated documentation quality analysis and coverage assessment
             </p>
