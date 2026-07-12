@@ -49,6 +49,8 @@ import { CodeIntelligencePage } from "@/pages/code-intelligence-page";
 import { CodeQualityPage } from "@/pages/code-quality-page";
 import { BugDetectionLayout } from "@/pages/bug-detection/BugDetectionLayout";
 import { BugDetectionWorkspace } from "@/pages/bug-detection/BugDetectionWorkspace";
+import { RootCauseLayout } from "@/pages/root-cause/RootCauseLayout";
+import { RootCauseWorkspace } from "@/pages/root-cause/RootCauseWorkspace";
 import { ScanHistoryPage } from "@/pages/scan-history-page";
 import { AiStatusPage } from "@/pages/ai-status-page";
 import { SettingsPage } from "@/pages/settings-page";
@@ -117,6 +119,9 @@ export function App() {
                 </Route>
                 <Route path="/projects/:projectId/bug-detection" element={<BugDetectionLayout />}>
                   <Route index element={<BugDetectionWorkspace />} />
+                </Route>
+                <Route path="/projects/:projectId/root-cause" element={<RootCauseLayout />}>
+                  <Route index element={<RootCauseWorkspace />} />
                 </Route>
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/scan-history" element={<ScanHistoryPage />} />

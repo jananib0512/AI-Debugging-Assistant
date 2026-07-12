@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -28,19 +29,45 @@ class ArchitectureDetectionService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
         workspace_path = get_workspace_path(project_id)
-        scanner = ProjectScanner(workspace_path)
-        scan = scanner.scan()
+        if not workspace_path.exists():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Workspace not found")
+
+        scanner = ProjectScanner()
+        scan = scanner.scan(Path(workspace_path))
 
         detector = ArchitectureDetectorRepository(scan)
-        result = detector.detect()
+        architectures = detector.detect_architectures()
+        layers = detector.detect_layers()
+
+        primary = None
+        alternatives: list[DetectedArchitectureInfo] = []
+        for i, arch in enumerate(architectures):
+            info = DetectedArchitectureInfo(
+                architecture=arch.get("architecture", "Unknown"),
+                confidence=arch.get("confidence", 0),
+                reason=arch.get("reason", ""),
+                evidence=arch.get("evidence", []),
+            )
+            if i == 0:
+                primary = info
+            else:
+                alternatives.append(info)
+
+        detected_layers = [
+            ArchitectureLayerInfo(name=layer["name"], directories=layer.get("directories", []))
+            for layer in layers
+        ]
 
         return ArchitectureDetectionResponse(
-            primary_architecture=result.get("primary_architecture"),
-            alternative_architectures=result.get("alternative_architectures", []),
-            detected_layers=result.get("detected_layers", []),
-            health=result.get("health", ArchitectureHealthDetail(score=0, label="Unknown")),
-            recommendations=result.get("recommendations", []),
-            visual_layers=result.get("visual_layers", []),
-            organization_summary=result.get("organization_summary", ""),
+            primary_architecture=primary,
+            alternative_architectures=alternatives,
+            detected_layers=detected_layers,
+            health=ArchitectureHealthDetail(
+                score=primary.confidence if primary else 0,
+                label="Detected" if primary else "Unknown",
+            ),
+            recommendations=[],
+            visual_layers=[],
+            organization_summary="",
             analyzed_at=datetime.now(timezone.utc),
         )

@@ -28,7 +28,7 @@ class ArchitectureDetectionEngine:
                 for file_path in workspace_path.rglob(pattern):
                     if self._is_ignored(file_path):
                         continue
-                    rel = str(file_path.relative_to(workspace))
+                    rel = str(file_path.relative_to(workspace_path))
                     imports = self._extract_imports(file_path)
                     import_graph[rel] = imports
 

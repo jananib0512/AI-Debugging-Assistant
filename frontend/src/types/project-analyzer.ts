@@ -2386,6 +2386,9 @@ export interface PerformanceAnalysisResponse {
 export interface ArchitectureIssueInfo extends SyntaxErrorInfo {
   architecture_category: string;
   impact_scope: string;
+  affected_module?: string;
+  business_impact?: string;
+  architecture_impact?: string;
 }
 
 export interface ArchitectureAnalysisResult {

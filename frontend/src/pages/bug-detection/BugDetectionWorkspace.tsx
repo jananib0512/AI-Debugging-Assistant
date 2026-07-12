@@ -13,12 +13,13 @@ import {
   FileCode,
   Play,
   RefreshCw,
-  Search,
-  X,
 } from "lucide-react";
 import { getBugDetectionWorkspace, getSyntaxDetection, getStaticCodeAnalysis, getDependencyAnalysis, getRuntimeAnalysis, getSecurityAnalysis, getPerformanceAnalysis, getArchitectureAnalysis, getBugPrioritization } from "@/lib/project-analyzer";
-import type { BugDetectionWorkspaceResponse, SyntaxDetectionResponse, StaticCodeAnalysisResponse, DependencyAnalysisResponse, RuntimeAnalysisResponse, SecurityAnalysisResponse, PerformanceAnalysisResponse, ArchitectureAnalysisResponse, PrioritizationResponse, SyntaxErrorInfo } from "@/types/project-analyzer";
+import type { BugDetectionWorkspaceResponse, SyntaxDetectionResponse, StaticCodeAnalysisResponse, DependencyAnalysisResponse, RuntimeAnalysisResponse, SecurityAnalysisResponse, PerformanceAnalysisResponse, ArchitectureAnalysisResponse, PrioritizationResponse, SyntaxErrorInfo, ArchitectureIssueInfo } from "@/types/project-analyzer";
+import { enhanceArchitectureBug, getModuleFromPath, getBusinessImpact, getArchitectureImpact } from "@/lib/architecture-logic-detector";
 import { Card, CardContent } from "@/components/ui/card";
+import { BugSummaryPanel } from "./BugSummaryPanel";
+import { getWorkflowNavigation } from "@/lib/workflow-navigation";
 
 const SEVERITY_ORDER: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
 
@@ -70,9 +71,7 @@ export function BugDetectionWorkspace() {
   const [detectionState, setDetectionState] = useState<DetectionState>("idle");
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(0);
-  const [search, setSearch] = useState("");
-  const [severityFilter, setSeverityFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [showAllCategory, setShowAllCategory] = useState<string | null>(null);
   const [selectedBug, setSelectedBug] = useState<SyntaxErrorInfo | null>(null);
@@ -205,6 +204,16 @@ export function BugDetectionWorkspace() {
     setSelectedBug(null);
   };
 
+  // ── Architecture-specific derived data ──
+
+  const architectureBugsAll = useMemo(() => {
+    return (architectureData?.results.flatMap((r) => r.errors) ?? []) as ArchitectureIssueInfo[];
+  }, [architectureData]);
+
+  const enhancedArchitectureBugs = useMemo(() => {
+    return architectureBugsAll.map(enhanceArchitectureBug);
+  }, [architectureBugsAll]);
+
   // ── Build categories from data ──
 
   const categories = useMemo((): BugCategory[] => {
@@ -215,7 +224,7 @@ export function BugDetectionWorkspace() {
     const runtimeBugs = runtimeData?.results.flatMap((r) => r.errors) ?? [];
     const securityBugs = securityData?.results.flatMap((r) => r.errors) ?? [];
     const performanceBugs = performanceData?.results.flatMap((r) => r.errors) ?? [];
-    const architectureBugs = architectureData?.results.flatMap((r) => r.errors) ?? [];
+    const architectureBugs = enhancedArchitectureBugs;
 
     const sevCounts = (bugs: SyntaxErrorInfo[]) => ({
       critical: bugs.filter((b) => b.severity === "Critical").length,
@@ -300,45 +309,19 @@ export function BugDetectionWorkspace() {
     }
 
     return cats;
-  }, [syntaxData, staticData, dependencyData, runtimeData, securityData, performanceData, architectureData]);
-
-  const totalCritical = useMemo(() => categories.reduce((s, c) => s + c.critical, 0), [categories]);
-  const totalHigh = useMemo(() => categories.reduce((s, c) => s + c.high, 0), [categories]);
-  const totalMedium = useMemo(() => categories.reduce((s, c) => s + c.medium, 0), [categories]);
-  const totalLow = useMemo(() => categories.reduce((s, c) => s + c.low, 0), [categories]);
-  const totalBugs = useMemo(() => categories.reduce((s, c) => s + c.total, 0), [categories]);
+  }, [syntaxData, staticData, dependencyData, runtimeData, securityData, performanceData, architectureData, enhancedArchitectureBugs]);
 
   // ── Search + Filter ──
 
   const allBugs = useMemo(() => categories.flatMap((c) => c.bugs), [categories]);
 
   const filteredBugs = useMemo(() => {
-    let bugs = [...allBugs];
-    if (search) {
-      const q = search.toLowerCase();
-      bugs = bugs.filter(
-        (b) =>
-          b.bug_title.toLowerCase().includes(q) ||
-          b.affected_file.toLowerCase().includes(q) ||
-          b.language.toLowerCase().includes(q) ||
-          b.severity.toLowerCase().includes(q) ||
-          b.description.toLowerCase().includes(q) ||
-          ("package_name" in b && (b as any).package_name?.toLowerCase().includes(q)),
-      );
-    }
-    if (severityFilter !== "all") bugs = bugs.filter((b) => b.severity === severityFilter);
-    if (categoryFilter !== "all") {
-      const cat = categories.find((c) => c.id === categoryFilter);
-      if (cat) {
-        const catBugs = new Set(cat.bugs);
-        bugs = bugs.filter((b) => catBugs.has(b));
-      }
-    }
+    const bugs = [...allBugs];
     bugs.sort((a, b) => (SEVERITY_ORDER[b.severity] ?? 0) - (SEVERITY_ORDER[a.severity] ?? 0));
     return bugs;
-  }, [allBugs, search, severityFilter, categoryFilter, categories]);
+  }, [allBugs]);
 
-  const hasFilters = search || severityFilter !== "all" || categoryFilter !== "all";
+  const hasFilters = false;
   const isCompleted = detectionState === "completed";
 
   // ── Render ──
@@ -445,155 +428,17 @@ export function BugDetectionWorkspace() {
         </section>
       )}
 
-      {/* ── Bug Overview (after completion) ── */}
+      {/* ── Bug Summary Panel (after completion) ── */}
       {isCompleted && (
         <>
-          {/* AI Summary */}
-          <Card hover={false}>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1">AI Summary</p>
-                  <p className="text-sm leading-relaxed text-[#374151]">
-                    {totalBugs === 0
-                      ? "No issues detected. Your project looks clean."
-                      : `${totalBugs} ${totalBugs === 1 ? "issue" : "issues"} detected.`
-                    }
-                    {totalCritical > 0 && ` ${totalCritical} Critical.`}
-                    {totalHigh > 0 && ` ${totalHigh} High.`}
-                    {totalMedium > 0 && ` ${totalMedium} Medium.`}
-                    {totalLow > 0 && ` ${totalLow} Low.`}
-                    {dependencyData && dependencyData.total_errors > 0 && ` ${dependencyData.total_errors} dependency issue${dependencyData.total_errors > 1 ? 's' : ''} detected.`}
-                    {dependencyData?.package_manager && ` Package manager: ${dependencyData.package_manager}.`}
-                    {runtimeData && runtimeData.total_errors > 0 && ` ${runtimeData.total_errors} runtime risk${runtimeData.total_errors > 1 ? 's' : ''} detected.`}
-                    {securityData && securityData.total_errors > 0 && ` ${securityData.total_errors} security issue${securityData.total_errors > 1 ? 's' : ''} detected.`}
-                    {securityData?.security_score !== undefined && securityData.security_score < 100 ? ` Security score: ${securityData.security_score}/100.` : ''}
-                    {performanceData && performanceData.total_errors > 0 && ` ${performanceData.total_errors} performance issue${performanceData.total_errors > 1 ? 's' : ''} detected.`}
-                    {architectureData && architectureData.total_errors > 0 && ` ${architectureData.total_errors} architecture issue${architectureData.total_errors > 1 ? 's' : ''} detected.`}
-                    {totalBugs > 0 && " The project may need attention before proceeding."}
-                    {totalBugs > 0 && " The AI Software Engineer recommends reviewing all issues and continuing to Root Cause Analysis."}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0 ml-6">
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-[#111827]">{syntaxData?.total_files_scanned ?? wsData.total_files}</p>
-                    <p className="text-[10px] text-[#6B7280]">Files Scanned</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-[#111827]">{totalBugs}</p>
-                    <p className="text-[10px] text-[#6B7280]">Issues Found</p>
-                  </div>
-                </div>
-              </div>
-              {totalBugs > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {totalCritical > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#FEF2F2] px-3 py-1 text-xs font-medium text-[#DC2626]"><span className="h-2 w-2 rounded-full bg-[#DC2626]" /> {totalCritical} Critical</span>}
-                  {totalHigh > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#FFF7ED] px-3 py-1 text-xs font-medium text-[#EA580C]"><span className="h-2 w-2 rounded-full bg-[#EA580C]" /> {totalHigh} High</span>}
-                  {totalMedium > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#FFFBEB] px-3 py-1 text-xs font-medium text-[#D97706]"><span className="h-2 w-2 rounded-full bg-[#F59E0B]" /> {totalMedium} Medium</span>}
-                  {totalLow > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#F3F4F6] px-3 py-1 text-xs font-medium text-[#6B7280]"><span className="h-2 w-2 rounded-full bg-[#9CA3AF]" /> {totalLow} Low</span>}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ── AI Bug Prioritization ── */}
-          {prioritizationData && prioritizationData.total_issues > 0 && (
-            <Card hover={false}>
-              <CardContent className="p-5">
-                <div className="mb-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1">AI Bug Prioritization</p>
-                  <p className="text-sm text-[#374151]">{prioritizationData.summary}</p>
-                </div>
-
-                {prioritizationData.ai_recommendations.length > 0 && (
-                  <div className="mb-4 rounded-lg bg-[#EFF6FF] p-3">
-                    <p className="text-xs font-semibold text-[#2563EB] mb-1.5">AI Recommendations</p>
-                    <ul className="space-y-1">
-                      {prioritizationData.ai_recommendations.map((r, i) => (
-                        <li key={i} className="flex gap-2 text-xs text-[#374151]">
-                          <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2563EB]" />
-                          {r}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-[#E5E7EB]">
-                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">Priority</th>
-                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">Issue</th>
-                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">File</th>
-                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">Severity</th>
-                        <th className="py-2 pr-3 text-left font-medium text-[#6B7280]">Engine</th>
-                        <th className="py-2 text-left font-medium text-[#6B7280]">Categories</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {prioritizationData.prioritized_issues.slice(0, 20).map((issue, i) => (
-                        <tr key={i} className="border-b border-[#F9FAFB] hover:bg-[#F9FAFB]">
-                          <td className="py-2 pr-3 text-[#111827] font-medium">{i + 1}</td>
-                          <td className="py-2 pr-3 text-[#111827] max-w-[200px] truncate">{issue.bug_title}</td>
-                          <td className="py-2 pr-3 text-[#6B7280] max-w-[150px] truncate">{issue.affected_file}</td>
-                          <td className="py-2 pr-3">
-                            <span className={"inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium " + (
-                              issue.severity === "Critical" ? "bg-[#FEF2F2] text-[#DC2626]" :
-                              issue.severity === "High" ? "bg-[#FFF7ED] text-[#EA580C]" :
-                              issue.severity === "Medium" ? "bg-[#FFFBEB] text-[#D97706]" :
-                              "bg-[#F3F4F6] text-[#6B7280]"
-                            )}>{issue.severity}</span>
-                          </td>
-                          <td className="py-2 pr-3 text-[#6B7280]">{issue.source_engine}</td>
-                          <td className="py-2 text-[#6B7280]">
-                            {issue.cross_cutting_categories && issue.cross_cutting_categories.length > 0
-                              ? issue.cross_cutting_categories.slice(0, 2).join(", ") + (issue.cross_cutting_categories.length > 2 ? "..." : "")
-                              : "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {prioritizationData.total_issues > 20 && (
-                    <p className="mt-2 text-[10px] text-[#9CA3AF]">Showing 20 of {prioritizationData.total_issues} issues</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+          {prioritizationData && (
+            <BugSummaryPanel
+              prioritizationData={prioritizationData}
+              securityData={securityData}
+              performanceData={performanceData}
+              staticData={staticData}
+            />
           )}
-
-          {/* Search + Filters */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative min-w-[220px] flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-              <input
-                type="text"
-                placeholder="Search by bug, file, language, severity..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white py-2 pl-9 pr-8 text-xs text-[#111827] placeholder-[#9CA3AF] outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
-              />
-              {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280]">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-            <select value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value)} className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-xs text-[#374151] outline-none focus:border-[#2563EB]">
-              <option value="all">All Severities</option>
-              <option value="Critical">Critical</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
-            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-xs text-[#374151] outline-none focus:border-[#2563EB]">
-              <option value="all">All Categories</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
 
           {/* ── Category Cards ── */}
           <div className="space-y-4">
@@ -711,6 +556,32 @@ export function BugDetectionWorkspace() {
                                         <span className="text-xs text-[#D1D5DB]">·</span>
                                         <span className="text-xs text-[#6B7280]">Status: Unresolved</span>
                                       </div>
+
+                                      {/* ── Architecture-specific enhanced detail ── */}
+                                      {"architecture_category" in bug && (
+                                        <div className="mb-3 rounded-lg border border-[#E5E7EB] bg-white p-3">
+                                          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6B7280] mb-2">Architecture & Logic Details</p>
+                                          <div className="grid gap-2 sm:grid-cols-2">
+                                            <div>
+                                              <span className="text-[10px] font-medium text-[#9CA3AF]">Issue Type</span>
+                                              <p className="text-xs font-medium text-[#111827]">{(bug as ArchitectureIssueInfo).architecture_category?.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</p>
+                                            </div>
+                                            <div>
+                                              <span className="text-[10px] font-medium text-[#9CA3AF]">Affected Module</span>
+                                              <p className="text-xs font-medium text-[#111827]">{getModuleFromPath(bug.affected_file)}</p>
+                                            </div>
+                                            <div>
+                                              <span className="text-[10px] font-medium text-[#9CA3AF]">Business Impact</span>
+                                              <p className="text-xs text-[#374151]">{getBusinessImpact((bug as ArchitectureIssueInfo).architecture_category)}</p>
+                                            </div>
+                                            <div>
+                                              <span className="text-[10px] font-medium text-[#9CA3AF]">Architecture Impact</span>
+                                              <p className="text-xs text-[#374151]">{(bug as ArchitectureIssueInfo).impact_scope || getArchitectureImpact((bug as ArchitectureIssueInfo).architecture_category)}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+
                                       <div className="grid gap-3 md:grid-cols-2">
                                         <div>
                                           <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF] mb-1">AI Explanation</p>
@@ -758,16 +629,6 @@ export function BugDetectionWorkspace() {
             })}
           </div>
 
-          {/* ── Primary Button ── */}
-          <div className="text-center">
-            <button
-              onClick={() => navigate(`/projects/${projectId}/analyzer`)}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-6 py-3 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
-            >
-              Continue to Root Cause Analysis
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
         </>
       )}
 
@@ -794,33 +655,48 @@ export function BugDetectionWorkspace() {
       )}
 
       {/* ── Navigation ── */}
-      <div className="flex items-center justify-between pt-2">
-        <button
-          onClick={() => navigate(`/projects/${projectId}/analyzer`)}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#6B7280] hover:text-[#111827] transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous: Project Analysis
-        </button>
-        <span className="text-xs text-[#9CA3AF]">Step 8 of 8</span>
-        {isCompleted ? (
-          <button
-            onClick={() => navigate(`/projects/${projectId}/bug-detection`)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
-          >
-            Next: Testing & QA
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        ) : (
-          <button
-            disabled
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#E5E7EB] px-5 py-2.5 text-sm font-medium text-[#9CA3AF] cursor-not-allowed"
-          >
-            Next: Testing & QA
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+      {(() => {
+        const nav = getWorkflowNavigation("bug-detection", projectId!);
+        const prev = nav.previous;
+        const nxt = nav.next;
+        return (
+          <div className="flex items-center justify-between pt-2">
+            {prev ? (
+              <button
+                onClick={() => navigate(prev.route)}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-[#6B7280] hover:text-[#111827] transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous: {prev.label}
+              </button>
+            ) : (
+              <div />
+            )}
+            <span className="text-xs text-[#9CA3AF]">Step {nav.current.number} of {nav.totalSteps}</span>
+            {nxt ? (
+              isCompleted ? (
+                <button
+                  onClick={() => navigate(nxt.route)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
+                >
+                  Next: {nxt.label}
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#E5E7EB] px-5 py-2.5 text-sm font-medium text-[#9CA3AF] cursor-not-allowed"
+                >
+                  Next: {nxt.label}
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              )
+            ) : (
+              <div />
+            )}
+          </div>
+        );
+      })()}
 
     </motion.div>
   );

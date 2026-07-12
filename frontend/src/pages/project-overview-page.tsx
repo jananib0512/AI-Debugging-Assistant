@@ -26,6 +26,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { Card } from "@/components/ui/card";
 import { WorkflowTracker } from "@/components/workflow/WorkflowTracker";
+import { getWorkflowNavigation } from "@/lib/workflow-navigation";
 import { getProjectMetadata } from "@/lib/project-metadata";
 import { getProject } from "@/lib/projects";
 import type { ProjectMetadata } from "@/types/project-metadata";
@@ -680,22 +681,37 @@ export function ProjectOverviewPage() {
       </motion.div>
 
       {/* Navigation */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between pt-2">
-        <button
-          onClick={() => navigate(`/upload`)}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#6B7280] hover:text-[#111827] transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous: Upload
-        </button>
-        <button
-          onClick={() => navigate(`/projects/${projectId}/analyzer`)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
-        >
-          Next: Project Analysis
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </motion.div>
+      {(() => {
+        const nav = getWorkflowNavigation("overview", projectId!);
+        const prev = nav.previous;
+        const nxt = nav.next;
+        return (
+          <motion.div variants={itemVariants} className="flex items-center justify-between pt-2">
+            {prev ? (
+              <button
+                onClick={() => navigate(prev.route)}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-[#6B7280] hover:text-[#111827] transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous: {prev.label}
+              </button>
+            ) : (
+              <div />
+            )}
+            {nxt ? (
+              <button
+                onClick={() => navigate(nxt.route)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#1D4ED8] transition-colors"
+              >
+                Next: {nxt.label}
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <div />
+            )}
+          </motion.div>
+        );
+      })()}
     </motion.div>
   );
 }
